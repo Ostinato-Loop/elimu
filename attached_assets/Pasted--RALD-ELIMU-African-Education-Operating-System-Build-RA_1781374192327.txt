@@ -1,0 +1,700 @@
+# RALD ELIMU — African Education Operating System
+
+Build RALD ELIMU, a free, modular, cloud-native School Management ERP designed to become the default digital operating system for African education.
+
+ELIMU means "Education."
+
+The platform must serve:
+
+- Nursery Schools
+- Primary Schools
+- Secondary Schools
+- Colleges
+- Polytechnics
+- Universities
+- Vocational Institutions
+- Government Education Agencies
+
+ELIMU is part of the RALD Ecosystem and must integrate deeply with:
+
+- RALD Identity
+- RALD Mail
+- RALD Auth
+- RALD ALIA
+- SEKANI AI
+- WIZMAC
+- RALD Voice
+- RALD Analytics Cloud
+
+---
+
+# Core Mission
+
+Every African school should be able to go online in under 15 minutes.
+
+No infrastructure expertise required.
+
+No IT department required.
+
+No software licensing fees required.
+
+A school should be able to:
+
+- Register
+- Receive a subdomain
+- Create staff accounts
+- Create student accounts
+- Issue school emails
+- Manage classes
+- Manage attendance
+- Manage results
+
+immediately.
+
+---
+
+# School Identity Infrastructure
+
+Every school receives:
+
+schoolname.elimu.africa
+
+Examples:
+
+greenfield.elimu.africa
+
+lagosacademy.elimu.africa
+
+unijos.elimu.africa
+
+---
+
+Schools with their own domains may connect:
+
+school.com
+
+school.edu.ng
+
+school.ac.ke
+
+school.ac.za
+
+etc.
+
+Custom domains must be fully supported.
+
+---
+
+# RALD Mail Integration
+
+Every school automatically receives:
+
+School Mail Infrastructure
+
+Examples:
+
+student@schoolname.elimu.africa
+
+teacher@schoolname.elimu.africa
+
+principal@schoolname.elimu.africa
+
+admin@schoolname.elimu.africa
+
+registrar@schoolname.elimu.africa
+
+vicechancellor@schoolname.elimu.africa
+
+---
+
+Provisioning must be automatic.
+
+No manual mail server setup.
+
+No DNS expertise required.
+
+One-click email creation.
+
+---
+
+# Student Digital Identity
+
+Every student automatically receives:
+
+RALD Identity
+
+Student Profile
+
+School Email
+
+Academic Record
+
+Attendance History
+
+Discipline History
+
+Achievements
+
+Certificates
+
+Transcript Record
+
+Digital Portfolio
+
+Identity remains portable for life.
+
+When a student changes schools:
+
+Records can securely move.
+
+When a student graduates:
+
+Identity remains active.
+
+---
+
+# Teacher Identity
+
+Teachers receive:
+
+School Email
+
+Teaching Dashboard
+
+Class Management
+
+Attendance Management
+
+Assignments
+
+Assessment Tools
+
+AI Assistant
+
+Communication Tools
+
+Professional Records
+
+Career Portfolio
+
+---
+
+# Parent Portal
+
+Parents receive:
+
+Child Progress
+
+Attendance Reports
+
+Academic Reports
+
+School Notices
+
+Fee Statements
+
+Communication Center
+
+School Calendar
+
+AI Parent Assistant
+
+Mobile-first experience.
+
+---
+
+# Core ERP Modules
+
+## Academic Management
+
+Classes
+
+Courses
+
+Subjects
+
+Departments
+
+Programs
+
+Curriculum
+
+Timetables
+
+Examinations
+
+Results
+
+Transcripts
+
+Certificates
+
+---
+
+## Student Information System
+
+Admissions
+
+Enrollment
+
+Student Records
+
+Student Profiles
+
+Health Records
+
+Guardian Information
+
+Digital Documents
+
+Transfers
+
+Graduation
+
+Alumni
+
+---
+
+## Finance
+
+Fee Management
+
+Invoices
+
+Payment Tracking
+
+Scholarships
+
+Bursaries
+
+Installments
+
+Revenue Analytics
+
+Expense Tracking
+
+Financial Reports
+
+---
+
+## Attendance
+
+Student Attendance
+
+Teacher Attendance
+
+Staff Attendance
+
+Biometric Support
+
+QR Attendance
+
+Mobile Attendance
+
+Offline Attendance
+
+---
+
+## Communication
+
+Announcements
+
+Messaging
+
+Email
+
+SMS
+
+Push Notifications
+
+Parent Communication
+
+Emergency Broadcasts
+
+---
+
+## HR Management
+
+Staff Profiles
+
+Payroll
+
+Performance Reviews
+
+Leave Management
+
+Recruitment
+
+Contracts
+
+Training
+
+---
+
+## Library
+
+Book Inventory
+
+Borrowing
+
+Returns
+
+Digital Library
+
+Research Assets
+
+Knowledge Repository
+
+---
+
+## Hostel Management
+
+Room Allocation
+
+Occupancy
+
+Visitor Management
+
+Hostel Billing
+
+Discipline Records
+
+---
+
+## Transport Management
+
+Routes
+
+Vehicles
+
+Drivers
+
+Tracking
+
+Student Pickup
+
+Parent Notifications
+
+---
+
+# SEKANI Education AI
+
+Every school receives:
+
+AI Teaching Assistant
+
+AI Student Assistant
+
+AI Parent Assistant
+
+AI Administrator Assistant
+
+AI Counselor Assistant
+
+AI Research Assistant
+
+---
+
+Capabilities:
+
+Homework Help
+
+Lesson Planning
+
+Assessment Generation
+
+Report Writing
+
+Student Insights
+
+Administrative Automation
+
+Curriculum Recommendations
+
+Academic Forecasting
+
+---
+
+# RALD Voice Integration
+
+Every module must support:
+
+African languages
+
+Regional dialects
+
+Voice-first navigation
+
+Voice announcements
+
+Voice attendance
+
+Voice learning
+
+Voice tutoring
+
+---
+
+Examples:
+
+English
+
+Pidgin
+
+Hausa
+
+Yoruba
+
+Igbo
+
+Swahili
+
+Amharic
+
+Zulu
+
+Xhosa
+
+French
+
+Arabic
+
+and future African languages.
+
+---
+
+# Offline Africa Strategy
+
+Must support:
+
+Low bandwidth
+
+Offline attendance
+
+Offline grading
+
+Offline communication
+
+Store-and-forward synchronization
+
+Rural deployments
+
+Community schools
+
+Government schools
+
+Agent-assisted onboarding
+
+---
+
+# RALD ALIA Integration
+
+Future capabilities:
+
+School payments
+
+Fee collection
+
+Scholarship disbursement
+
+Government grants
+
+Payroll routing
+
+Vendor payments
+
+Student wallets
+
+Identity-based payments
+
+No account numbers required.
+
+---
+
+# Analytics Cloud
+
+Generate:
+
+Attendance Scores
+
+Performance Scores
+
+School Health Metrics
+
+Enrollment Trends
+
+Dropout Risk Scores
+
+Teacher Performance Metrics
+
+Financial Analytics
+
+Regional Education Insights
+
+Government Dashboards
+
+---
+
+# Government Layer
+
+Future integrations:
+
+Education Ministries
+
+WAEC
+
+NECO
+
+JAMB
+
+Universities
+
+National Databases
+
+Accreditation Bodies
+
+Scholarship Programs
+
+Student Verification
+
+Digital Credentials
+
+---
+
+# Business Model
+
+Core ERP:
+
+FREE FOREVER
+
+Revenue generated from:
+
+RALD Mail premium storage
+
+SMS usage
+
+Payment transactions
+
+Premium AI capabilities
+
+Enterprise hosting
+
+Advanced analytics
+
+Government deployments
+
+Custom integrations
+
+Identity verification services
+
+---
+
+# Technical Architecture
+
+Frontend
+
+Next.js
+
+React
+
+TypeScript
+
+TailwindCSS
+
+Mobile-first
+
+PWA
+
+---
+
+Backend
+
+Cloudflare Workers
+
+Hono
+
+Durable Objects
+
+Cloudflare Queues
+
+---
+
+Database
+
+PostgreSQL
+
+Redis
+
+Cloudflare D1
+
+---
+
+Storage
+
+Cloudflare R2
+
+---
+
+Authentication
+
+RALD Auth
+
+RALD Identity
+
+Passkeys
+
+SSO
+
+---
+
+Communication
+
+RALD Mail
+
+SMS
+
+Push
+
+Voice
+
+---
+
+AI
+
+SEKANI
+
+WIZMAC
+
+BBC
+
+RALD Voice
+
+---
+
+# Long-Term Vision
+
+RALD ELIMU becomes:
+
+The operating system for African education.
+
+Every student receives a lifelong educational identity.
+
+Every school receives free digital infrastructure.
+
+Every teacher receives AI assistance.
+
+Every parent receives visibility.
+
+Every government receives trusted educational analytics.
+
+ELIMU should be capable of supporting:
+
+100,000+ schools
+
+100 million+ students
+
+10 million+ teachers
+
+50+ countries
+
+without requiring a foundational redesign.

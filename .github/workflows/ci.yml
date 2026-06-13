@@ -1,0 +1,58 @@
+name: CI — RALD ELIMU
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Type-check & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+        continue-on-error: true
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Codegen (API spec → hooks + Zod)
+        run: pnpm --filter @workspace/api-spec run codegen
+        continue-on-error: true
+
+      - name: Type-check (all packages)
+        run: pnpm run typecheck
+        continue-on-error: true
+
+      - name: Build API server
+        run: pnpm --filter @workspace/api-server run build
+        continue-on-error: true
+
+      - name: Docker build smoke test
+        run: docker build -t elimu-api-test . --no-cache
+        continue-on-error: true

@@ -2,21 +2,52 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 1.0.0
+  description: RALD ELIMU — African Education Operating System API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: schools
+    description: School management
+  - name: students
+    description: Student management & identity
+  - name: staff
+    description: Staff & teacher management
+  - name: parents
+    description: Parent accounts
+  - name: classes
+    description: Class management
+  - name: subjects
+    description: Subject management
+  - name: timetables
+    description: Timetable management
+  - name: attendance
+    description: Attendance tracking
+  - name: assessments
+    description: Assessments & results
+  - name: fees
+    description: Fee structures
+  - name: payments
+    description: Payment records
+  - name: announcements
+    description: School announcements
+  - name: verification
+    description: Credential verification
+  - name: dashboard
+    description: Dashboard aggregates
+
 paths:
+  # ── Health ─────────────────────────────────────────────────────────────────
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +55,2577 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Auth ───────────────────────────────────────────────────────────────────
+  /auth/user:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user or null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+
+  # ── Schools ────────────────────────────────────────────────────────────────
+  /schools:
+    get:
+      operationId: listSchools
+      tags: [schools]
+      summary: List all schools
+      parameters:
+        - in: query
+          name: country
+          schema:
+            type: string
+        - in: query
+          name: type
+          schema:
+            $ref: "#/components/schemas/SchoolType"
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of schools
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchoolListResponse"
+    post:
+      operationId: createSchool
+      tags: [schools]
+      summary: Register a new school
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSchoolBody"
+      responses:
+        "201":
+          description: Created school
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/School"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /schools/{schoolId}:
+    get:
+      operationId: getSchool
+      tags: [schools]
+      summary: Get a school by ID
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+      responses:
+        "200":
+          description: School
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/School"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateSchool
+      tags: [schools]
+      summary: Update school details
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSchoolBody"
+      responses:
+        "200":
+          description: Updated school
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/School"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Students ───────────────────────────────────────────────────────────────
+  /schools/{schoolId}/students:
+    get:
+      operationId: listStudents
+      tags: [students]
+      summary: List students in a school
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+        - in: query
+          name: classId
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/StudentStatus"
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of students
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentListResponse"
+    post:
+      operationId: enrollStudent
+      tags: [students]
+      summary: Enroll a new student
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnrollStudentBody"
+      responses:
+        "201":
+          description: Enrolled student
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /students/{studentId}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      summary: Get a student profile
+      parameters:
+        - $ref: "#/components/parameters/studentId"
+      responses:
+        "200":
+          description: Student profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateStudent
+      tags: [students]
+      summary: Update student profile
+      parameters:
+        - $ref: "#/components/parameters/studentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStudentBody"
+      responses:
+        "200":
+          description: Updated student
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  /students/{studentId}/transcript:
+    get:
+      operationId: getStudentTranscript
+      tags: [students]
+      summary: Get student academic transcript
+      parameters:
+        - $ref: "#/components/parameters/studentId"
+      responses:
+        "200":
+          description: Student transcript
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentTranscript"
+
+  # ── Staff ──────────────────────────────────────────────────────────────────
+  /schools/{schoolId}/staff:
+    get:
+      operationId: listStaff
+      tags: [staff]
+      summary: List staff members in a school
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+        - in: query
+          name: role
+          schema:
+            $ref: "#/components/schemas/StaffRole"
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of staff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffListResponse"
+    post:
+      operationId: addStaffMember
+      tags: [staff]
+      summary: Add a staff member
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddStaffBody"
+      responses:
+        "201":
+          description: Added staff member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMember"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /staff/{staffId}:
+    get:
+      operationId: getStaffMember
+      tags: [staff]
+      summary: Get a staff member
+      parameters:
+        - $ref: "#/components/parameters/staffId"
+      responses:
+        "200":
+          description: Staff member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMember"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateStaffMember
+      tags: [staff]
+      summary: Update staff member
+      parameters:
+        - $ref: "#/components/parameters/staffId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStaffBody"
+      responses:
+        "200":
+          description: Updated staff member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffMember"
+
+  # ── Parents ────────────────────────────────────────────────────────────────
+  /schools/{schoolId}/parents:
+    get:
+      operationId: listParents
+      tags: [parents]
+      summary: List parents in a school
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of parents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentListResponse"
+    post:
+      operationId: addParent
+      tags: [parents]
+      summary: Add a parent/guardian
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddParentBody"
+      responses:
+        "201":
+          description: Added parent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Parent"
+
+  /parents/{parentId}:
+    get:
+      operationId: getParent
+      tags: [parents]
+      summary: Get a parent profile
+      parameters:
+        - $ref: "#/components/parameters/parentId"
+      responses:
+        "200":
+          description: Parent profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Parent"
+
+  /parents/{parentId}/children:
+    get:
+      operationId: getParentChildren
+      tags: [parents]
+      summary: Get all children of a parent
+      parameters:
+        - $ref: "#/components/parameters/parentId"
+      responses:
+        "200":
+          description: Children list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  children:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Student"
+                required: [children]
+
+  # ── Classes ────────────────────────────────────────────────────────────────
+  /schools/{schoolId}/classes:
+    get:
+      operationId: listClasses
+      tags: [classes]
+      summary: List classes in a school
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+        - in: query
+          name: academicYear
+          schema:
+            type: string
+        - in: query
+          name: academicTerm
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: List of classes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassListResponse"
+    post:
+      operationId: createClass
+      tags: [classes]
+      summary: Create a new class
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClassBody"
+      responses:
+        "201":
+          description: Created class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+
+  /classes/{classId}:
+    get:
+      operationId: getClass
+      tags: [classes]
+      summary: Get a class
+      parameters:
+        - $ref: "#/components/parameters/classId"
+      responses:
+        "200":
+          description: Class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateClass
+      tags: [classes]
+      summary: Update a class
+      parameters:
+        - $ref: "#/components/parameters/classId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateClassBody"
+      responses:
+        "200":
+          description: Updated class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+
+  /classes/{classId}/students:
+    get:
+      operationId: listClassStudents
+      tags: [classes]
+      summary: List students enrolled in a class
+      parameters:
+        - $ref: "#/components/parameters/classId"
+      responses:
+        "200":
+          description: Students in class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentListResponse"
+    post:
+      operationId: enrollStudentInClass
+      tags: [classes]
+      summary: Enroll a student in a class
+      parameters:
+        - $ref: "#/components/parameters/classId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnrollStudentInClassBody"
+      responses:
+        "201":
+          description: Enrollment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassEnrollment"
+
+  # ── Subjects ───────────────────────────────────────────────────────────────
+  /schools/{schoolId}/subjects:
+    get:
+      operationId: listSubjects
+      tags: [subjects]
+      summary: List subjects in a school
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+        - in: query
+          name: academicLevel
+          schema:
+            $ref: "#/components/schemas/AcademicLevel"
+      responses:
+        "200":
+          description: List of subjects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubjectListResponse"
+    post:
+      operationId: createSubject
+      tags: [subjects]
+      summary: Create a subject
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubjectBody"
+      responses:
+        "201":
+          description: Created subject
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+
+  /subjects/{subjectId}:
+    get:
+      operationId: getSubject
+      tags: [subjects]
+      summary: Get a subject
+      parameters:
+        - $ref: "#/components/parameters/subjectId"
+      responses:
+        "200":
+          description: Subject
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+    put:
+      operationId: updateSubject
+      tags: [subjects]
+      summary: Update a subject
+      parameters:
+        - $ref: "#/components/parameters/subjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSubjectBody"
+      responses:
+        "200":
+          description: Updated subject
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+
+  # ── Timetables ─────────────────────────────────────────────────────────────
+  /classes/{classId}/timetable:
+    get:
+      operationId: getClassTimetable
+      tags: [timetables]
+      summary: Get timetable for a class
+      parameters:
+        - $ref: "#/components/parameters/classId"
+      responses:
+        "200":
+          description: Class timetable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimetableResponse"
+    post:
+      operationId: addTimetableEntry
+      tags: [timetables]
+      summary: Add a timetable entry
+      parameters:
+        - $ref: "#/components/parameters/classId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTimetableEntryBody"
+      responses:
+        "201":
+          description: Created timetable entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimetableEntry"
+
+  /timetable/{entryId}:
+    delete:
+      operationId: deleteTimetableEntry
+      tags: [timetables]
+      summary: Delete a timetable entry
+      parameters:
+        - in: path
+          name: entryId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── Attendance ─────────────────────────────────────────────────────────────
+  /classes/{classId}/attendance:
+    get:
+      operationId: listAttendance
+      tags: [attendance]
+      summary: List attendance records for a class
+      parameters:
+        - $ref: "#/components/parameters/classId"
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Attendance records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceListResponse"
+    post:
+      operationId: recordAttendance
+      tags: [attendance]
+      summary: Record attendance for a class
+      parameters:
+        - $ref: "#/components/parameters/classId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordAttendanceBody"
+      responses:
+        "201":
+          description: Attendance recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceSummary"
+
+  /students/{studentId}/attendance:
+    get:
+      operationId: getStudentAttendance
+      tags: [attendance]
+      summary: Get attendance history for a student
+      parameters:
+        - $ref: "#/components/parameters/studentId"
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Student attendance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentAttendanceResponse"
+
+  # ── Assessments ────────────────────────────────────────────────────────────
+  /classes/{classId}/assessments:
+    get:
+      operationId: listAssessments
+      tags: [assessments]
+      summary: List assessments for a class
+      parameters:
+        - $ref: "#/components/parameters/classId"
+        - in: query
+          name: subjectId
+          schema:
+            type: string
+        - in: query
+          name: type
+          schema:
+            $ref: "#/components/schemas/AssessmentType"
+      responses:
+        "200":
+          description: List of assessments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssessmentListResponse"
+    post:
+      operationId: createAssessment
+      tags: [assessments]
+      summary: Create an assessment
+      parameters:
+        - $ref: "#/components/parameters/classId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssessmentBody"
+      responses:
+        "201":
+          description: Created assessment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+
+  /assessments/{assessmentId}:
+    get:
+      operationId: getAssessment
+      tags: [assessments]
+      summary: Get an assessment
+      parameters:
+        - $ref: "#/components/parameters/assessmentId"
+      responses:
+        "200":
+          description: Assessment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+
+  /assessments/{assessmentId}/results:
+    get:
+      operationId: listAssessmentResults
+      tags: [assessments]
+      summary: Get all results for an assessment
+      parameters:
+        - $ref: "#/components/parameters/assessmentId"
+      responses:
+        "200":
+          description: Assessment results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssessmentResultListResponse"
+    post:
+      operationId: recordAssessmentResults
+      tags: [assessments]
+      summary: Record results for an assessment
+      parameters:
+        - $ref: "#/components/parameters/assessmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordResultsBody"
+      responses:
+        "201":
+          description: Results recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssessmentResultListResponse"
+
+  /students/{studentId}/results:
+    get:
+      operationId: getStudentResults
+      tags: [assessments]
+      summary: Get all results for a student
+      parameters:
+        - $ref: "#/components/parameters/studentId"
+        - in: query
+          name: classId
+          schema:
+            type: string
+        - in: query
+          name: subjectId
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Student results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentResultsResponse"
+
+  # ── Fees ───────────────────────────────────────────────────────────────────
+  /schools/{schoolId}/fees:
+    get:
+      operationId: listFeeStructures
+      tags: [fees]
+      summary: List fee structures for a school
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+        - in: query
+          name: academicYear
+          schema:
+            type: string
+        - in: query
+          name: academicTerm
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Fee structures
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeStructureListResponse"
+    post:
+      operationId: createFeeStructure
+      tags: [fees]
+      summary: Create a fee structure
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFeeStructureBody"
+      responses:
+        "201":
+          description: Created fee structure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeStructure"
+
+  /fees/{feeId}:
+    get:
+      operationId: getFeeStructure
+      tags: [fees]
+      summary: Get a fee structure
+      parameters:
+        - $ref: "#/components/parameters/feeId"
+      responses:
+        "200":
+          description: Fee structure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeStructure"
+
+  /fees/{feeId}/payments:
+    get:
+      operationId: listFeePayments
+      tags: [fees]
+      summary: List payments for a fee structure
+      parameters:
+        - $ref: "#/components/parameters/feeId"
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/PaymentStatus"
+      responses:
+        "200":
+          description: Fee payments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentListResponse"
+
+  # ── Payments ───────────────────────────────────────────────────────────────
+  /payments:
+    post:
+      operationId: recordPayment
+      tags: [payments]
+      summary: Record a fee payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordPaymentBody"
+      responses:
+        "201":
+          description: Payment recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  /students/{studentId}/payments:
+    get:
+      operationId: getStudentPayments
+      tags: [payments]
+      summary: Get all payments for a student
+      parameters:
+        - $ref: "#/components/parameters/studentId"
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/PaymentStatus"
+        - in: query
+          name: academicYear
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Student payments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentListResponse"
+
+  /payments/{paymentId}:
+    get:
+      operationId: getPayment
+      tags: [payments]
+      summary: Get a specific payment
+      parameters:
+        - in: path
+          name: paymentId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+
+  # ── Announcements ──────────────────────────────────────────────────────────
+  /schools/{schoolId}/announcements:
+    get:
+      operationId: listAnnouncements
+      tags: [announcements]
+      summary: List announcements for a school
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+        - in: query
+          name: audience
+          schema:
+            $ref: "#/components/schemas/AnnouncementAudience"
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Announcements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnnouncementListResponse"
+    post:
+      operationId: createAnnouncement
+      tags: [announcements]
+      summary: Create an announcement
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAnnouncementBody"
+      responses:
+        "201":
+          description: Created announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+
+  /announcements/{announcementId}:
+    get:
+      operationId: getAnnouncement
+      tags: [announcements]
+      summary: Get an announcement
+      parameters:
+        - $ref: "#/components/parameters/announcementId"
+      responses:
+        "200":
+          description: Announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+    delete:
+      operationId: deleteAnnouncement
+      tags: [announcements]
+      summary: Delete an announcement
+      parameters:
+        - $ref: "#/components/parameters/announcementId"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── Verification ───────────────────────────────────────────────────────────
+  /verify/{hash}:
+    get:
+      operationId: verifyCredential
+      tags: [verification]
+      summary: Publicly verify an academic credential
+      parameters:
+        - in: path
+          name: hash
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerificationResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /credentials:
+    post:
+      operationId: issueCredential
+      tags: [verification]
+      summary: Issue a digital credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueCredentialBody"
+      responses:
+        "201":
+          description: Issued credential
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credential"
+
+  /students/{studentId}/credentials:
+    get:
+      operationId: getStudentCredentials
+      tags: [verification]
+      summary: Get all credentials for a student
+      parameters:
+        - $ref: "#/components/parameters/studentId"
+      responses:
+        "200":
+          description: Student credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialListResponse"
+
+  # ── Dashboard ──────────────────────────────────────────────────────────────
+  /schools/{schoolId}/dashboard:
+    get:
+      operationId: getSchoolDashboard
+      tags: [dashboard]
+      summary: Get aggregated dashboard data for a school
+      parameters:
+        - $ref: "#/components/parameters/schoolId"
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchoolDashboard"
+
+# ── Components ─────────────────────────────────────────────────────────────────
 components:
+  parameters:
+    schoolId:
+      in: path
+      name: schoolId
+      required: true
+      schema:
+        type: string
+    studentId:
+      in: path
+      name: studentId
+      required: true
+      schema:
+        type: string
+    staffId:
+      in: path
+      name: staffId
+      required: true
+      schema:
+        type: string
+    parentId:
+      in: path
+      name: parentId
+      required: true
+      schema:
+        type: string
+    classId:
+      in: path
+      name: classId
+      required: true
+      schema:
+        type: string
+    subjectId:
+      in: path
+      name: subjectId
+      required: true
+      schema:
+        type: string
+    assessmentId:
+      in: path
+      name: assessmentId
+      required: true
+      schema:
+        type: string
+    announcementId:
+      in: path
+      name: announcementId
+      required: true
+      schema:
+        type: string
+    feeId:
+      in: path
+      name: feeId
+      required: true
+      schema:
+        type: string
+
   schemas:
+    # ── Primitives ──────────────────────────────────────────────────────────
     HealthStatus:
       type: object
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+      required: [error]
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required: [success]
+
+    # ── Enums ───────────────────────────────────────────────────────────────
+    SchoolType:
+      type: string
+      enum: [kindergarten, primary, secondary, university, polytechnic, vocational]
+
+    StudentStatus:
+      type: string
+      enum: [active, graduated, transferred, suspended, withdrawn]
+
+    StaffRole:
+      type: string
+      enum: [teacher, administrator, support, counselor, librarian, nurse]
+
+    AcademicLevel:
+      type: string
+      enum: [kindergarten, primary, secondary, university]
+
+    AssessmentType:
+      type: string
+      enum: [exam, ca, assignment, quiz, project, practical]
+
+    AttendanceStatus:
+      type: string
+      enum: [present, absent, late, excused]
+
+    AnnouncementAudience:
+      type: string
+      enum: [all, students, teachers, parents, staff]
+
+    PaymentStatus:
+      type: string
+      enum: [pending, completed, failed, refunded, partial]
+
+    PaymentMethod:
+      type: string
+      enum: [cash, bank_transfer, card, mobile_money, scholarship, grant]
+
+    CredentialType:
+      type: string
+      enum: [result, certificate, diploma, degree, transcript, award]
+
+    DayOfWeek:
+      type: string
+      enum: [monday, tuesday, wednesday, thursday, friday, saturday]
+
+    # ── Auth ────────────────────────────────────────────────────────────────
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          nullable: true
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        profileImageUrl:
+          type: string
+          nullable: true
+      required: [id]
+
+    CurrentUserResponse:
+      type: object
+      properties:
+        user:
+          nullable: true
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+      required: [user]
+
+    # ── School ──────────────────────────────────────────────────────────────
+    School:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/SchoolType"
+        country:
+          type: string
+        state:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        logoUrl:
+          type: string
+          nullable: true
+        accreditationStatus:
+          type: string
+          nullable: true
+        verificationStatus:
+          type: string
+          enum: [unverified, pending, verified]
+        enrollmentCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, type, country, verificationStatus, enrollmentCount, createdAt, updatedAt]
+
+    SchoolListResponse:
+      type: object
+      properties:
+        schools:
+          type: array
+          items:
+            $ref: "#/components/schemas/School"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required: [schools, total, page, limit]
+
+    CreateSchoolBody:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/SchoolType"
+        country:
+          type: string
+        state:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        logoUrl:
+          type: string
+      required: [name, type, country]
+
+    UpdateSchoolBody:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/SchoolType"
+        country:
+          type: string
+        state:
+          type: string
+        city:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        logoUrl:
+          type: string
+        accreditationStatus:
+          type: string
+
+    # ── Student ─────────────────────────────────────────────────────────────
+    Student:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        studentNumber:
+          type: string
+        schoolId:
+          type: string
+        classId:
+          type: string
+          nullable: true
+        dateOfBirth:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          type: string
+          nullable: true
+        enrollmentDate:
+          type: string
+          format: date
+        academicLevel:
+          $ref: "#/components/schemas/AcademicLevel"
+        status:
+          $ref: "#/components/schemas/StudentStatus"
+        profileImageUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, firstName, lastName, studentNumber, schoolId, enrollmentDate, academicLevel, status, createdAt, updatedAt]
+
+    StudentListResponse:
+      type: object
+      properties:
+        students:
+          type: array
+          items:
+            $ref: "#/components/schemas/Student"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required: [students, total, page, limit]
+
+    EnrollStudentBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        gender:
+          type: string
+        enrollmentDate:
+          type: string
+          format: date
+        academicLevel:
+          $ref: "#/components/schemas/AcademicLevel"
+        classId:
+          type: string
+        profileImageUrl:
+          type: string
+      required: [firstName, lastName, academicLevel]
+
+    UpdateStudentBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        gender:
+          type: string
+        classId:
+          type: string
+        status:
+          $ref: "#/components/schemas/StudentStatus"
+        profileImageUrl:
+          type: string
+
+    TranscriptEntry:
+      type: object
+      properties:
+        subjectName:
+          type: string
+        subjectCode:
+          type: string
+        assessmentType:
+          $ref: "#/components/schemas/AssessmentType"
+        score:
+          type: number
+        maxScore:
+          type: number
+        grade:
+          type: string
+          nullable: true
+        academicYear:
+          type: string
+        academicTerm:
+          type: string
+          nullable: true
+        assessmentDate:
+          type: string
+          format: date
+          nullable: true
+      required: [subjectName, subjectCode, assessmentType, score, maxScore, academicYear]
+
+    StudentTranscript:
+      type: object
+      properties:
+        student:
+          $ref: "#/components/schemas/Student"
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranscriptEntry"
+        gpa:
+          type: number
+          nullable: true
+        totalCredits:
+          type: integer
+          nullable: true
+      required: [student, entries]
+
+    # ── Staff ───────────────────────────────────────────────────────────────
+    StaffMember:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        staffNumber:
+          type: string
+        schoolId:
+          type: string
+        role:
+          $ref: "#/components/schemas/StaffRole"
+        subjectIds:
+          type: array
+          items:
+            type: string
+        certifications:
+          type: array
+          items:
+            type: string
+        joinedDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [active, inactive, on_leave]
+        profileImageUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, firstName, lastName, staffNumber, schoolId, role, subjectIds, certifications, joinedDate, status, createdAt, updatedAt]
+
+    StaffListResponse:
+      type: object
+      properties:
+        staff:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffMember"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required: [staff, total, page, limit]
+
+    AddStaffBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          $ref: "#/components/schemas/StaffRole"
+        subjectIds:
+          type: array
+          items:
+            type: string
+        certifications:
+          type: array
+          items:
+            type: string
+        joinedDate:
+          type: string
+          format: date
+        profileImageUrl:
+          type: string
+      required: [firstName, lastName, role]
+
+    UpdateStaffBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          $ref: "#/components/schemas/StaffRole"
+        subjectIds:
+          type: array
+          items:
+            type: string
+        certifications:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, inactive, on_leave]
+        profileImageUrl:
+          type: string
+
+    # ── Parent ──────────────────────────────────────────────────────────────
+    Parent:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        schoolId:
+          type: string
+        occupation:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        childrenIds:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, firstName, lastName, schoolId, childrenIds, createdAt, updatedAt]
+
+    ParentListResponse:
+      type: object
+      properties:
+        parents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Parent"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required: [parents, total, page, limit]
+
+    AddParentBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        occupation:
+          type: string
+        address:
+          type: string
+        studentIds:
+          type: array
+          items:
+            type: string
+      required: [firstName, lastName]
+
+    # ── Class ───────────────────────────────────────────────────────────────
+    Class:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        schoolId:
+          type: string
+        teacherId:
+          type: string
+          nullable: true
+        academicYear:
+          type: string
+        academicTerm:
+          type: string
+          nullable: true
+        academicLevel:
+          $ref: "#/components/schemas/AcademicLevel"
+        studentCount:
+          type: integer
+        roomNumber:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, schoolId, academicYear, academicLevel, studentCount, createdAt, updatedAt]
+
+    ClassListResponse:
+      type: object
+      properties:
+        classes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Class"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required: [classes, total, page, limit]
+
+    CreateClassBody:
+      type: object
+      properties:
+        name:
+          type: string
+        teacherId:
+          type: string
+        academicYear:
+          type: string
+        academicTerm:
+          type: string
+        academicLevel:
+          $ref: "#/components/schemas/AcademicLevel"
+        roomNumber:
+          type: string
+      required: [name, academicYear, academicLevel]
+
+    UpdateClassBody:
+      type: object
+      properties:
+        name:
+          type: string
+        teacherId:
+          type: string
+        academicTerm:
+          type: string
+        roomNumber:
+          type: string
+
+    ClassEnrollment:
+      type: object
+      properties:
+        id:
+          type: string
+        classId:
+          type: string
+        studentId:
+          type: string
+        academicYear:
+          type: string
+        enrolledAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, withdrawn, completed]
+      required: [id, classId, studentId, academicYear, enrolledAt, status]
+
+    EnrollStudentInClassBody:
+      type: object
+      properties:
+        studentId:
+          type: string
+        academicYear:
+          type: string
+      required: [studentId]
+
+    # ── Subject ─────────────────────────────────────────────────────────────
+    Subject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        schoolId:
+          type: string
+        academicLevel:
+          $ref: "#/components/schemas/AcademicLevel"
+        description:
+          type: string
+          nullable: true
+        creditUnits:
+          type: integer
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, code, schoolId, academicLevel, createdAt, updatedAt]
+
+    SubjectListResponse:
+      type: object
+      properties:
+        subjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subject"
+        total:
+          type: integer
+      required: [subjects, total]
+
+    CreateSubjectBody:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        academicLevel:
+          $ref: "#/components/schemas/AcademicLevel"
+        description:
+          type: string
+        creditUnits:
+          type: integer
+      required: [name, code, academicLevel]
+
+    UpdateSubjectBody:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+        creditUnits:
+          type: integer
+
+    # ── Timetable ────────────────────────────────────────────────────────────
+    TimetableEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        classId:
+          type: string
+        subjectId:
+          type: string
+        subjectName:
+          type: string
+          nullable: true
+        teacherId:
+          type: string
+          nullable: true
+        teacherName:
+          type: string
+          nullable: true
+        dayOfWeek:
+          $ref: "#/components/schemas/DayOfWeek"
+        startTime:
+          type: string
+        endTime:
+          type: string
+        room:
+          type: string
+          nullable: true
+      required: [id, classId, subjectId, dayOfWeek, startTime, endTime]
+
+    TimetableResponse:
+      type: object
+      properties:
+        classId:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimetableEntry"
+      required: [classId, entries]
+
+    AddTimetableEntryBody:
+      type: object
+      properties:
+        subjectId:
+          type: string
+        teacherId:
+          type: string
+        dayOfWeek:
+          $ref: "#/components/schemas/DayOfWeek"
+        startTime:
+          type: string
+        endTime:
+          type: string
+        room:
+          type: string
+      required: [subjectId, dayOfWeek, startTime, endTime]
+
+    # ── Attendance ──────────────────────────────────────────────────────────
+    AttendanceRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        classId:
+          type: string
+        studentId:
+          type: string
+        studentName:
+          type: string
+          nullable: true
+        date:
+          type: string
+          format: date
+        status:
+          $ref: "#/components/schemas/AttendanceStatus"
+        remarks:
+          type: string
+          nullable: true
+        recordedBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, classId, studentId, date, status, createdAt]
+
+    AttendanceListResponse:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceRecord"
+        total:
+          type: integer
+        date:
+          type: string
+          format: date
+          nullable: true
+      required: [records, total]
+
+    AttendanceEntry:
+      type: object
+      properties:
+        studentId:
+          type: string
+        status:
+          $ref: "#/components/schemas/AttendanceStatus"
+        remarks:
+          type: string
+      required: [studentId, status]
+
+    RecordAttendanceBody:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceEntry"
+      required: [date, entries]
+
+    AttendanceSummary:
+      type: object
+      properties:
+        classId:
+          type: string
+        date:
+          type: string
+          format: date
+        totalStudents:
+          type: integer
+        presentCount:
+          type: integer
+        absentCount:
+          type: integer
+        lateCount:
+          type: integer
+        excusedCount:
+          type: integer
+        attendanceRate:
+          type: number
+      required: [classId, date, totalStudents, presentCount, absentCount, lateCount, excusedCount, attendanceRate]
+
+    StudentAttendanceResponse:
+      type: object
+      properties:
+        studentId:
+          type: string
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceRecord"
+        summary:
+          $ref: "#/components/schemas/AttendanceSummary"
+      required: [studentId, records, summary]
+
+    # ── Assessment ──────────────────────────────────────────────────────────
+    Assessment:
+      type: object
+      properties:
+        id:
+          type: string
+        classId:
+          type: string
+        subjectId:
+          type: string
+        subjectName:
+          type: string
+          nullable: true
+        title:
+          type: string
+        type:
+          $ref: "#/components/schemas/AssessmentType"
+        maxScore:
+          type: number
+        weight:
+          type: number
+          nullable: true
+        date:
+          type: string
+          format: date
+          nullable: true
+        academicYear:
+          type: string
+        academicTerm:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, classId, subjectId, title, type, maxScore, academicYear, createdAt, updatedAt]
+
+    AssessmentListResponse:
+      type: object
+      properties:
+        assessments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Assessment"
+        total:
+          type: integer
+      required: [assessments, total]
+
+    CreateAssessmentBody:
+      type: object
+      properties:
+        subjectId:
+          type: string
+        title:
+          type: string
+        type:
+          $ref: "#/components/schemas/AssessmentType"
+        maxScore:
+          type: number
+        weight:
+          type: number
+        date:
+          type: string
+          format: date
+        academicYear:
+          type: string
+        academicTerm:
+          type: string
+      required: [subjectId, title, type, maxScore, academicYear]
+
+    AssessmentResult:
+      type: object
+      properties:
+        id:
+          type: string
+        assessmentId:
+          type: string
+        studentId:
+          type: string
+        studentName:
+          type: string
+          nullable: true
+        score:
+          type: number
+        grade:
+          type: string
+          nullable: true
+        remarks:
+          type: string
+          nullable: true
+        recordedBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, assessmentId, studentId, score, createdAt]
+
+    AssessmentResultListResponse:
+      type: object
+      properties:
+        assessmentId:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssessmentResult"
+        averageScore:
+          type: number
+          nullable: true
+        passRate:
+          type: number
+          nullable: true
+      required: [assessmentId, results]
+
+    ResultEntry:
+      type: object
+      properties:
+        studentId:
+          type: string
+        score:
+          type: number
+        grade:
+          type: string
+        remarks:
+          type: string
+      required: [studentId, score]
+
+    RecordResultsBody:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResultEntry"
+      required: [results]
+
+    StudentResultsResponse:
+      type: object
+      properties:
+        studentId:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssessmentResult"
+        gpa:
+          type: number
+          nullable: true
+      required: [studentId, results]
+
+    # ── Fee & Payment ───────────────────────────────────────────────────────
+    FeeStructure:
+      type: object
+      properties:
+        id:
+          type: string
+        schoolId:
+          type: string
+        name:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        academicYear:
+          type: string
+        academicTerm:
+          type: string
+          nullable: true
+        academicLevel:
+          $ref: "#/components/schemas/AcademicLevel"
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, schoolId, name, amount, currency, academicYear, academicLevel, createdAt, updatedAt]
+
+    FeeStructureListResponse:
+      type: object
+      properties:
+        fees:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeeStructure"
+        total:
+          type: integer
+      required: [fees, total]
+
+    CreateFeeStructureBody:
+      type: object
+      properties:
+        name:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+          default: NGN
+        academicYear:
+          type: string
+        academicTerm:
+          type: string
+        academicLevel:
+          $ref: "#/components/schemas/AcademicLevel"
+        dueDate:
+          type: string
+          format: date
+        description:
+          type: string
+      required: [name, amount, academicYear, academicLevel]
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        feeStructureId:
+          type: string
+        studentId:
+          type: string
+        studentName:
+          type: string
+          nullable: true
+        amountPaid:
+          type: number
+        currency:
+          type: string
+        paymentMethod:
+          $ref: "#/components/schemas/PaymentMethod"
+        reference:
+          type: string
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, feeStructureId, studentId, amountPaid, currency, paymentMethod, reference, status, createdAt]
+
+    PaymentListResponse:
+      type: object
+      properties:
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Payment"
+        total:
+          type: integer
+        totalAmount:
+          type: number
+      required: [payments, total, totalAmount]
+
+    RecordPaymentBody:
+      type: object
+      properties:
+        feeStructureId:
+          type: string
+        studentId:
+          type: string
+        amountPaid:
+          type: number
+        currency:
+          type: string
+          default: NGN
+        paymentMethod:
+          $ref: "#/components/schemas/PaymentMethod"
+        reference:
+          type: string
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        paidAt:
+          type: string
+          format: date-time
+      required: [feeStructureId, studentId, amountPaid, paymentMethod]
+
+    # ── Announcement ────────────────────────────────────────────────────────
+    Announcement:
+      type: object
+      properties:
+        id:
+          type: string
+        schoolId:
+          type: string
+        authorId:
+          type: string
+        authorName:
+          type: string
+          nullable: true
+        title:
+          type: string
+        body:
+          type: string
+        audience:
+          $ref: "#/components/schemas/AnnouncementAudience"
+        publishedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, schoolId, authorId, title, body, audience, publishedAt, createdAt, updatedAt]
+
+    AnnouncementListResponse:
+      type: object
+      properties:
+        announcements:
+          type: array
+          items:
+            $ref: "#/components/schemas/Announcement"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+      required: [announcements, total, page, limit]
+
+    CreateAnnouncementBody:
+      type: object
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        audience:
+          $ref: "#/components/schemas/AnnouncementAudience"
+        publishedAt:
+          type: string
+          format: date-time
+      required: [title, body, audience]
+
+    # ── Verification ────────────────────────────────────────────────────────
+    Credential:
+      type: object
+      properties:
+        id:
+          type: string
+        studentId:
+          type: string
+        studentName:
+          type: string
+          nullable: true
+        schoolId:
+          type: string
+        schoolName:
+          type: string
+          nullable: true
+        type:
+          $ref: "#/components/schemas/CredentialType"
+        title:
+          type: string
+        issuedAt:
+          type: string
+          format: date-time
+        verificationHash:
+          type: string
+        verified:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, studentId, schoolId, type, title, issuedAt, verificationHash, verified, createdAt]
+
+    CredentialListResponse:
+      type: object
+      properties:
+        credentials:
+          type: array
+          items:
+            $ref: "#/components/schemas/Credential"
+        total:
+          type: integer
+      required: [credentials, total]
+
+    IssueCredentialBody:
+      type: object
+      properties:
+        studentId:
+          type: string
+        type:
+          $ref: "#/components/schemas/CredentialType"
+        title:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required: [studentId, type, title]
+
+    VerificationResult:
+      type: object
+      properties:
+        verified:
+          type: boolean
+        credential:
+          nullable: true
+          oneOf:
+            - $ref: "#/components/schemas/Credential"
+            - type: "null"
+        message:
+          type: string
+      required: [verified, credential, message]
+
+    # ── Dashboard ────────────────────────────────────────────────────────────
+    SchoolDashboard:
+      type: object
+      properties:
+        schoolId:
+          type: string
+        school:
+          $ref: "#/components/schemas/School"
+        stats:
+          type: object
+          properties:
+            totalStudents:
+              type: integer
+            totalStaff:
+              type: integer
+            totalClasses:
+              type: integer
+            totalParents:
+              type: integer
+            attendanceRateToday:
+              type: number
+              nullable: true
+            outstandingFees:
+              type: number
+            recentPayments:
+              type: integer
+          required: [totalStudents, totalStaff, totalClasses, totalParents, outstandingFees, recentPayments]
+        recentAnnouncements:
+          type: array
+          items:
+            $ref: "#/components/schemas/Announcement"
+        attendanceByClass:
+          type: array
+          items:
+            type: object
+            properties:
+              classId:
+                type: string
+              className:
+                type: string
+              attendanceRate:
+                type: number
+              date:
+                type: string
+                format: date
+            required: [classId, className, attendanceRate, date]
+        recentPaymentsList:
+          type: array
+          items:
+            $ref: "#/components/schemas/Payment"
+      required: [schoolId, school, stats, recentAnnouncements, attendanceByClass, recentPaymentsList]
