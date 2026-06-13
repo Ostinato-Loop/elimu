@@ -1,0 +1,294 @@
+# RALD ELIMU — AFRICAN EDUCATION OPERATING SYSTEM
+
+## Vision
+
+RALD ELIMU is a free, modular School Management ERP built specifically for Africa.
+
+Its mission is to become the default operating system powering educational institutions across Africa, from kindergarten to university.
+
+ELIMU means "Education."
+
+The platform is designed to eliminate fragmented school systems by providing a unified cloud infrastructure that manages academics, administration, finance, communication, identity, and student success in a single platform.
+
+---
+
+# Core Philosophy
+
+Schools should never be blocked from digitization because of software costs.
+
+The core ELIMU platform is free forever.
+
+Revenue is generated through:
+
+- Transaction infrastructure
+- Premium enterprise modules
+- Automation services
+- Verification services
+- AI services
+- Financial services
+- Infrastructure usage
+
+---
+
+# Core Product Structure
+
+## ELIMU Core
+
+Free forever.
+
+Supports:
+
+- Student management
+- Staff management
+- Class management
+- Timetables
+- Attendance
+- Results
+- Parent communication
+- School directory
+- Announcements
+- Basic reporting
+
+Every school receives:
+
+- School workspace
+- Administrator account
+- Teacher accounts
+- Student accounts
+- Parent accounts
+
+---
+
+# ELIMU Identity Layer
+
+Powered by RALD Identity.
+
+Every participant receives:
+
+## Student Identity
+
+Persistent lifelong educational identity.
+
+Tracks:
+
+- Academic history
+- Certificates
+- Results
+- Skills
+- Attendance
+- Activities
+
+Portable across schools.
+
+---
+
+## Teacher Identity
+
+Tracks:
+
+- Teaching history
+- Certifications
+- Performance
+- Experience
+- Reputation
+
+Portable across institutions.
+
+---
+
+## School Identity
+
+Tracks:
+
+- Accreditation
+- Enrollment
+- Performance
+- Verification status
+
+---
+
+# ELIMU Academic Cloud
+
+Supports:
+
+## Kindergarten
+
+- Attendance
+- Progress tracking
+- Parent communication
+
+## Primary School
+
+- Subjects
+- Exams
+- Results
+
+## Secondary School
+
+- Continuous assessment
+- WAEC preparation
+- NECO preparation
+
+## University
+
+- Faculties
+- Departments
+- Courses
+- GPA
+- Transcript generation
+
+---
+
+# ELIMU Finance
+
+Powered by RALD ALIA.
+
+Supports:
+
+- School fees
+- Tuition payments
+- Scholarships
+- Grants
+- Donations
+
+Parents pay using:
+
+- Email
+- Phone
+- Username
+
+instead of account numbers.
+
+---
+
+# ELIMU AI
+
+Powered by SEKANI.
+
+Functions:
+
+## Teacher Assistant
+
+- Lesson planning
+- Marking support
+- Assessment generation
+
+## Student Assistant
+
+- Homework help
+- Study support
+- Revision guidance
+
+## Parent Assistant
+
+- Student progress insights
+- Recommendations
+
+---
+
+# ELIMU Voice
+
+Powered by Loop Voice.
+
+Students and parents can interact using:
+
+- Hausa
+- Yoruba
+- Igbo
+- Pidgin
+- Swahili
+- English
+
+Voice-first education support.
+
+---
+
+# ELIMU Verification
+
+Digital verification for:
+
+- Results
+- Certificates
+- Diplomas
+- Degrees
+- Academic records
+
+Universities and employers can verify instantly.
+
+---
+
+# ELIMU Marketplace
+
+Schools can access:
+
+- Tutors
+- Teachers
+- Content providers
+- Educational publishers
+- Examination resources
+
+---
+
+# ELIMU Infrastructure
+
+Architecture:
+
+- Cloudflare Workers
+- PostgreSQL
+- R2 Storage
+- Durable Objects
+- Event-driven architecture
+
+Built to support:
+
+- Millions of students
+- Hundreds of thousands of teachers
+- Tens of thousands of schools
+
+---
+
+# Revenue Model
+
+Core platform:
+FREE
+
+Monetization:
+
+- Payment processing fees
+- Verification fees
+- AI usage
+- Enterprise modules
+- SMS notifications
+- Premium analytics
+- Government integrations
+
+---
+
+# Government Layer
+
+Future support:
+
+- National student IDs
+- Examination boards
+- Scholarship systems
+- Teacher registries
+- School accreditation
+
+---
+
+# Long-Term Vision
+
+RALD ELIMU becomes:
+
+- The Education Operating System for Africa
+- The Student Identity Network for Africa
+- The Academic Verification Network for Africa
+- The Educational AI Infrastructure Layer for Africa
+
+Every student receives a lifelong educational identity.
+
+Every teacher receives a portable professional profile.
+
+Every school operates on one unified platform.
+
+Education becomes digitally connected across the continent.
