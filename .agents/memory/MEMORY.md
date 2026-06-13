@@ -1,0 +1,1 @@
+- [ELIMU Stack](elimu-stack.md) — TanStack Router SPA (not Start), oklch theme, hero button via inline style, GitHub push via project task
