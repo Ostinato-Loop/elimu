@@ -9,7 +9,7 @@ router.get("/schools/:schoolId/subjects", async (req: Request, res: Response) =>
   try {
     const { academicLevel } = req.query as Record<string, string>;
 
-    const conditions: SQL[] = [eq(subjectsTable.schoolId, req.params.schoolId)];
+    const conditions: SQL[] = [eq(subjectsTable.schoolId, (req.params.schoolId as string))];
     if (academicLevel) conditions.push(eq(subjectsTable.academicLevel, academicLevel));
 
     const subjects = await db.select().from(subjectsTable).where(and(...conditions));
@@ -32,7 +32,7 @@ router.post("/schools/:schoolId/subjects", async (req: Request, res: Response) =
       id: randomUUID(),
       name,
       code,
-      schoolId: req.params.schoolId,
+      schoolId: (req.params.schoolId as string),
       academicLevel,
       description: description || null,
       creditUnits: creditUnits || null,
@@ -47,7 +47,7 @@ router.post("/schools/:schoolId/subjects", async (req: Request, res: Response) =
 
 router.get("/subjects/:subjectId", async (req: Request, res: Response) => {
   try {
-    const [subject] = await db.select().from(subjectsTable).where(eq(subjectsTable.id, req.params.subjectId));
+    const [subject] = await db.select().from(subjectsTable).where(eq(subjectsTable.id, (req.params.subjectId as string)));
     if (!subject) {
       res.status(404).json({ error: "Subject not found" });
       return;
@@ -72,7 +72,7 @@ router.put("/subjects/:subjectId", async (req: Request, res: Response) => {
         ...(creditUnits !== undefined && { creditUnits }),
         updatedAt: new Date(),
       })
-      .where(eq(subjectsTable.id, req.params.subjectId))
+      .where(eq(subjectsTable.id, (req.params.subjectId as string)))
       .returning();
 
     if (!subject) {

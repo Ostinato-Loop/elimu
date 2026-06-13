@@ -9,7 +9,7 @@ router.get("/classes/:classId/attendance", async (req: Request, res: Response) =
   try {
     const { date, from, to } = req.query as Record<string, string>;
 
-    const conditions: SQL[] = [eq(attendanceRecordsTable.classId, req.params.classId)];
+    const conditions: SQL[] = [eq(attendanceRecordsTable.classId, (req.params.classId as string))];
     if (date) conditions.push(eq(attendanceRecordsTable.date, date));
     if (from) conditions.push(gte(attendanceRecordsTable.date, from));
     if (to) conditions.push(lte(attendanceRecordsTable.date, to));
@@ -38,7 +38,7 @@ router.post("/classes/:classId/attendance", async (req: Request, res: Response) 
           .select()
           .from(attendanceRecordsTable)
           .where(and(
-            eq(attendanceRecordsTable.classId, req.params.classId),
+            eq(attendanceRecordsTable.classId, (req.params.classId as string)),
             eq(attendanceRecordsTable.studentId, entry.studentId),
             eq(attendanceRecordsTable.date, date),
           ));
@@ -54,7 +54,7 @@ router.post("/classes/:classId/attendance", async (req: Request, res: Response) 
 
         const [record] = await db.insert(attendanceRecordsTable).values({
           id: randomUUID(),
-          classId: req.params.classId,
+          classId: (req.params.classId as string),
           studentId: entry.studentId,
           date,
           status: entry.status,
@@ -72,7 +72,7 @@ router.post("/classes/:classId/attendance", async (req: Request, res: Response) 
     const total = records.length;
 
     res.status(201).json({
-      classId: req.params.classId,
+      classId: (req.params.classId as string),
       date,
       totalStudents: total,
       presentCount: present,
@@ -91,7 +91,7 @@ router.get("/students/:studentId/attendance", async (req: Request, res: Response
   try {
     const { from, to } = req.query as Record<string, string>;
 
-    const conditions: SQL[] = [eq(attendanceRecordsTable.studentId, req.params.studentId)];
+    const conditions: SQL[] = [eq(attendanceRecordsTable.studentId, (req.params.studentId as string))];
     if (from) conditions.push(gte(attendanceRecordsTable.date, from));
     if (to) conditions.push(lte(attendanceRecordsTable.date, to));
 
@@ -104,7 +104,7 @@ router.get("/students/:studentId/attendance", async (req: Request, res: Response
     const total = records.length;
 
     res.json({
-      studentId: req.params.studentId,
+      studentId: (req.params.studentId as string),
       records,
       summary: {
         classId: records[0]?.classId || "",

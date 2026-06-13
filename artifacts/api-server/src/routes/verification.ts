@@ -16,7 +16,7 @@ router.get("/verify/:hash", async (req: Request, res: Response) => {
     const [credential] = await db
       .select()
       .from(credentialsTable)
-      .where(eq(credentialsTable.verificationHash, req.params.hash));
+      .where(eq(credentialsTable.verificationHash, (req.params.hash as string)));
 
     if (!credential) {
       res.status(404).json({
@@ -85,7 +85,7 @@ router.get("/students/:studentId/credentials", async (req: Request, res: Respons
     const credentials = await db
       .select()
       .from(credentialsTable)
-      .where(eq(credentialsTable.studentId, req.params.studentId));
+      .where(eq(credentialsTable.studentId, (req.params.studentId as string)));
 
     res.json({ credentials, total: credentials.length });
   } catch (e: unknown) {

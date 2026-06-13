@@ -12,7 +12,7 @@ router.get("/schools/:schoolId/classes", async (req: Request, res: Response) => 
     const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10)));
     const offset = (pageNum - 1) * limitNum;
 
-    const conditions: SQL[] = [eq(classesTable.schoolId, req.params.schoolId)];
+    const conditions: SQL[] = [eq(classesTable.schoolId, (req.params.schoolId as string))];
     if (academicYear) conditions.push(eq(classesTable.academicYear, academicYear));
     if (academicTerm) conditions.push(eq(classesTable.academicTerm, academicTerm));
 
@@ -36,7 +36,7 @@ router.post("/schools/:schoolId/classes", async (req: Request, res: Response) =>
     const [cls] = await db.insert(classesTable).values({
       id: randomUUID(),
       name,
-      schoolId: req.params.schoolId,
+      schoolId: (req.params.schoolId as string),
       teacherId: teacherId || null,
       academicYear,
       academicTerm: academicTerm || null,
@@ -54,7 +54,7 @@ router.post("/schools/:schoolId/classes", async (req: Request, res: Response) =>
 
 router.get("/classes/:classId", async (req: Request, res: Response) => {
   try {
-    const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, req.params.classId));
+    const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, (req.params.classId as string)));
     if (!cls) {
       res.status(404).json({ error: "Class not found" });
       return;
@@ -79,7 +79,7 @@ router.put("/classes/:classId", async (req: Request, res: Response) => {
         ...(roomNumber !== undefined && { roomNumber }),
         updatedAt: new Date(),
       })
-      .where(eq(classesTable.id, req.params.classId))
+      .where(eq(classesTable.id, (req.params.classId as string)))
       .returning();
 
     if (!cls) {
@@ -99,7 +99,7 @@ router.get("/classes/:classId/students", async (req: Request, res: Response) => 
       .select({ studentId: classEnrollmentsTable.studentId })
       .from(classEnrollmentsTable)
       .where(and(
-        eq(classEnrollmentsTable.classId, req.params.classId),
+        eq(classEnrollmentsTable.classId, (req.params.classId as string)),
         eq(classEnrollmentsTable.status, "active")
       ));
 
@@ -125,7 +125,7 @@ router.post("/classes/:classId/students", async (req: Request, res: Response) =>
       return;
     }
 
-    const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, req.params.classId));
+    const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, (req.params.classId as string)));
     if (!cls) {
       res.status(404).json({ error: "Class not found" });
       return;
@@ -133,20 +133,20 @@ router.post("/classes/:classId/students", async (req: Request, res: Response) =>
 
     const [enrollment] = await db.insert(classEnrollmentsTable).values({
       id: randomUUID(),
-      classId: req.params.classId,
+      classId: (req.params.classId as string),
       studentId,
       academicYear: academicYear || cls.academicYear,
       status: "active",
     }).returning();
 
-    await db.update(studentsTable).set({ classId: req.params.classId }).where(eq(studentsTable.id, studentId));
+    await db.update(studentsTable).set({ classId: (req.params.classId as string) }).where(eq(studentsTable.id, studentId));
 
     const count = await db
       .select({ studentId: classEnrollmentsTable.studentId })
       .from(classEnrollmentsTable)
-      .where(and(eq(classEnrollmentsTable.classId, req.params.classId), eq(classEnrollmentsTable.status, "active")));
+      .where(and(eq(classEnrollmentsTable.classId, (req.params.classId as string)), eq(classEnrollmentsTable.status, "active")));
 
-    await db.update(classesTable).set({ studentCount: count.length }).where(eq(classesTable.id, req.params.classId));
+    await db.update(classesTable).set({ studentCount: count.length }).where(eq(classesTable.id, (req.params.classId as string)));
 
     res.status(201).json(enrollment);
   } catch (e: unknown) {

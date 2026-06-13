@@ -10,7 +10,7 @@ router.get("/classes/:classId/timetable", async (req: Request, res: Response) =>
     const entries = await db
       .select()
       .from(timetableEntriesTable)
-      .where(eq(timetableEntriesTable.classId, req.params.classId));
+      .where(eq(timetableEntriesTable.classId, (req.params.classId as string)));
 
     const enriched = await Promise.all(entries.map(async entry => {
       const [subject] = await db.select({ name: subjectsTable.name }).from(subjectsTable).where(eq(subjectsTable.id, entry.subjectId));
@@ -29,7 +29,7 @@ router.get("/classes/:classId/timetable", async (req: Request, res: Response) =>
       };
     }));
 
-    res.json({ classId: req.params.classId, entries: enriched });
+    res.json({ classId: (req.params.classId as string), entries: enriched });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     res.status(500).json({ error: msg });
@@ -46,7 +46,7 @@ router.post("/classes/:classId/timetable", async (req: Request, res: Response) =
 
     const [entry] = await db.insert(timetableEntriesTable).values({
       id: randomUUID(),
-      classId: req.params.classId,
+      classId: (req.params.classId as string),
       subjectId,
       teacherId: teacherId || null,
       dayOfWeek,
@@ -64,7 +64,7 @@ router.post("/classes/:classId/timetable", async (req: Request, res: Response) =
 
 router.delete("/timetable/:entryId", async (req: Request, res: Response) => {
   try {
-    await db.delete(timetableEntriesTable).where(eq(timetableEntriesTable.id, req.params.entryId));
+    await db.delete(timetableEntriesTable).where(eq(timetableEntriesTable.id, (req.params.entryId as string)));
     res.json({ success: true });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unknown error";

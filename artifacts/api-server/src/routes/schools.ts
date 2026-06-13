@@ -65,7 +65,7 @@ router.get("/schools/:schoolId", async (req: Request, res: Response) => {
     const [school] = await db
       .select()
       .from(schoolsTable)
-      .where(eq(schoolsTable.id, req.params.schoolId));
+      .where(eq(schoolsTable.id, (req.params.schoolId as string)));
 
     if (!school) {
       res.status(404).json({ error: "School not found" });
@@ -97,7 +97,7 @@ router.put("/schools/:schoolId", async (req: Request, res: Response) => {
         ...(accreditationStatus !== undefined && { accreditationStatus }),
         updatedAt: new Date(),
       })
-      .where(eq(schoolsTable.id, req.params.schoolId))
+      .where(eq(schoolsTable.id, (req.params.schoolId as string)))
       .returning();
 
     if (!school) {

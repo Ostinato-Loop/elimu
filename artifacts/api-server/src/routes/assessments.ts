@@ -22,7 +22,7 @@ router.get("/classes/:classId/assessments", async (req: Request, res: Response) 
   try {
     const { subjectId, type } = req.query as Record<string, string>;
 
-    const conditions: SQL[] = [eq(assessmentsTable.classId, req.params.classId)];
+    const conditions: SQL[] = [eq(assessmentsTable.classId, (req.params.classId as string))];
     if (subjectId) conditions.push(eq(assessmentsTable.subjectId, subjectId));
     if (type) conditions.push(eq(assessmentsTable.type, type));
 
@@ -50,7 +50,7 @@ router.post("/classes/:classId/assessments", async (req: Request, res: Response)
 
     const [assessment] = await db.insert(assessmentsTable).values({
       id: randomUUID(),
-      classId: req.params.classId,
+      classId: (req.params.classId as string),
       subjectId,
       title,
       type,
@@ -71,7 +71,7 @@ router.post("/classes/:classId/assessments", async (req: Request, res: Response)
 
 router.get("/assessments/:assessmentId", async (req: Request, res: Response) => {
   try {
-    const [assessment] = await db.select().from(assessmentsTable).where(eq(assessmentsTable.id, req.params.assessmentId));
+    const [assessment] = await db.select().from(assessmentsTable).where(eq(assessmentsTable.id, (req.params.assessmentId as string)));
     if (!assessment) {
       res.status(404).json({ error: "Assessment not found" });
       return;
@@ -86,13 +86,13 @@ router.get("/assessments/:assessmentId", async (req: Request, res: Response) => 
 
 router.get("/assessments/:assessmentId/results", async (req: Request, res: Response) => {
   try {
-    const [assessment] = await db.select().from(assessmentsTable).where(eq(assessmentsTable.id, req.params.assessmentId));
+    const [assessment] = await db.select().from(assessmentsTable).where(eq(assessmentsTable.id, (req.params.assessmentId as string)));
     if (!assessment) {
       res.status(404).json({ error: "Assessment not found" });
       return;
     }
 
-    const results = await db.select().from(assessmentResultsTable).where(eq(assessmentResultsTable.assessmentId, req.params.assessmentId));
+    const results = await db.select().from(assessmentResultsTable).where(eq(assessmentResultsTable.assessmentId, (req.params.assessmentId as string)));
 
     const enriched = await Promise.all(results.map(async r => {
       const [student] = await db
@@ -110,7 +110,7 @@ router.get("/assessments/:assessmentId/results", async (req: Request, res: Respo
     const passCount = enriched.filter(r => r.score >= assessment.maxScore * 0.5).length;
     const passRate = enriched.length > 0 ? parseFloat(((passCount / enriched.length) * 100).toFixed(1)) : null;
 
-    res.json({ assessmentId: req.params.assessmentId, results: enriched, averageScore: avgScore, passRate });
+    res.json({ assessmentId: (req.params.assessmentId as string), results: enriched, averageScore: avgScore, passRate });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     res.status(500).json({ error: msg });
@@ -125,7 +125,7 @@ router.post("/assessments/:assessmentId/results", async (req: Request, res: Resp
       return;
     }
 
-    const [assessment] = await db.select().from(assessmentsTable).where(eq(assessmentsTable.id, req.params.assessmentId));
+    const [assessment] = await db.select().from(assessmentsTable).where(eq(assessmentsTable.id, (req.params.assessmentId as string)));
     if (!assessment) {
       res.status(404).json({ error: "Assessment not found" });
       return;
@@ -141,7 +141,7 @@ router.post("/assessments/:assessmentId/results", async (req: Request, res: Resp
           .select()
           .from(assessmentResultsTable)
           .where(and(
-            eq(assessmentResultsTable.assessmentId, req.params.assessmentId),
+            eq(assessmentResultsTable.assessmentId, (req.params.assessmentId as string)),
             eq(assessmentResultsTable.studentId, entry.studentId),
           ));
 
@@ -156,7 +156,7 @@ router.post("/assessments/:assessmentId/results", async (req: Request, res: Resp
 
         const [result] = await db.insert(assessmentResultsTable).values({
           id: randomUUID(),
-          assessmentId: req.params.assessmentId,
+          assessmentId: (req.params.assessmentId as string),
           studentId: entry.studentId,
           score: entry.score,
           grade,
@@ -172,7 +172,7 @@ router.post("/assessments/:assessmentId/results", async (req: Request, res: Resp
     const passCount = saved.filter(r => r.score >= assessment.maxScore * 0.5).length;
     const passRate = saved.length > 0 ? parseFloat(((passCount / saved.length) * 100).toFixed(1)) : null;
 
-    res.status(201).json({ assessmentId: req.params.assessmentId, results: saved, averageScore: avgScore, passRate });
+    res.status(201).json({ assessmentId: (req.params.assessmentId as string), results: saved, averageScore: avgScore, passRate });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     res.status(500).json({ error: msg });
@@ -183,7 +183,7 @@ router.get("/students/:studentId/results", async (req: Request, res: Response) =
   try {
     const { classId, subjectId } = req.query as Record<string, string>;
 
-    const results = await db.select().from(assessmentResultsTable).where(eq(assessmentResultsTable.studentId, req.params.studentId));
+    const results = await db.select().from(assessmentResultsTable).where(eq(assessmentResultsTable.studentId, (req.params.studentId as string)));
 
     const enriched = await Promise.all(results.map(async r => {
       const [assessment] = await db.select().from(assessmentsTable).where(eq(assessmentsTable.id, r.assessmentId));
@@ -201,7 +201,7 @@ router.get("/students/:studentId/results", async (req: Request, res: Response) =
 
     const gpa = totalMax > 0 ? parseFloat(((totalScore / totalMax) * 4).toFixed(2)) : null;
 
-    res.json({ studentId: req.params.studentId, results: filtered, gpa });
+    res.json({ studentId: (req.params.studentId as string), results: filtered, gpa });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     res.status(500).json({ error: msg });

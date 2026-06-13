@@ -9,7 +9,7 @@ router.get("/schools/:schoolId/fees", async (req: Request, res: Response) => {
   try {
     const { academicYear, academicTerm } = req.query as Record<string, string>;
 
-    const conditions: SQL[] = [eq(feeStructuresTable.schoolId, req.params.schoolId)];
+    const conditions: SQL[] = [eq(feeStructuresTable.schoolId, (req.params.schoolId as string))];
     if (academicYear) conditions.push(eq(feeStructuresTable.academicYear, academicYear));
     if (academicTerm) conditions.push(eq(feeStructuresTable.academicTerm, academicTerm));
 
@@ -31,7 +31,7 @@ router.post("/schools/:schoolId/fees", async (req: Request, res: Response) => {
 
     const [fee] = await db.insert(feeStructuresTable).values({
       id: randomUUID(),
-      schoolId: req.params.schoolId,
+      schoolId: (req.params.schoolId as string),
       name,
       amount,
       currency,
@@ -51,7 +51,7 @@ router.post("/schools/:schoolId/fees", async (req: Request, res: Response) => {
 
 router.get("/fees/:feeId", async (req: Request, res: Response) => {
   try {
-    const [fee] = await db.select().from(feeStructuresTable).where(eq(feeStructuresTable.id, req.params.feeId));
+    const [fee] = await db.select().from(feeStructuresTable).where(eq(feeStructuresTable.id, (req.params.feeId as string)));
     if (!fee) {
       res.status(404).json({ error: "Fee structure not found" });
       return;
@@ -67,7 +67,7 @@ router.get("/fees/:feeId/payments", async (req: Request, res: Response) => {
   try {
     const { status } = req.query as Record<string, string>;
 
-    const conditions: SQL[] = [eq(feePaymentsTable.feeStructureId, req.params.feeId)];
+    const conditions: SQL[] = [eq(feePaymentsTable.feeStructureId, (req.params.feeId as string))];
     if (status) conditions.push(eq(feePaymentsTable.status, status));
 
     const payments = await db.select().from(feePaymentsTable).where(and(...conditions));

@@ -18,7 +18,7 @@ router.get("/schools/:schoolId/staff", async (req: Request, res: Response) => {
     const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10)));
     const offset = (pageNum - 1) * limitNum;
 
-    const conditions: SQL[] = [eq(staffTable.schoolId, req.params.schoolId)];
+    const conditions: SQL[] = [eq(staffTable.schoolId, (req.params.schoolId as string))];
     if (role) conditions.push(eq(staffTable.role, role));
 
     let all = await db.select().from(staffTable).where(and(...conditions));
@@ -60,7 +60,7 @@ router.post("/schools/:schoolId/staff", async (req: Request, res: Response) => {
       email: email || null,
       phone: phone || null,
       staffNumber: generateStaffNumber(),
-      schoolId: req.params.schoolId,
+      schoolId: (req.params.schoolId as string),
       role,
       subjectIds: JSON.stringify(subjectIds),
       certifications: JSON.stringify(certifications),
@@ -85,7 +85,7 @@ router.get("/staff/:staffId", async (req: Request, res: Response) => {
     const [member] = await db
       .select()
       .from(staffTable)
-      .where(eq(staffTable.id, req.params.staffId));
+      .where(eq(staffTable.id, (req.params.staffId as string)));
 
     if (!member) {
       res.status(404).json({ error: "Staff member not found" });
@@ -120,7 +120,7 @@ router.put("/staff/:staffId", async (req: Request, res: Response) => {
         ...(profileImageUrl !== undefined && { profileImageUrl }),
         updatedAt: new Date(),
       })
-      .where(eq(staffTable.id, req.params.staffId))
+      .where(eq(staffTable.id, (req.params.staffId as string)))
       .returning();
 
     if (!member) {

@@ -46,7 +46,7 @@ router.get("/students/:studentId/payments", async (req: Request, res: Response) 
   try {
     const { status, academicYear } = req.query as Record<string, string>;
 
-    const conditions: SQL[] = [eq(feePaymentsTable.studentId, req.params.studentId)];
+    const conditions: SQL[] = [eq(feePaymentsTable.studentId, (req.params.studentId as string))];
     if (status) conditions.push(eq(feePaymentsTable.status, status));
 
     let payments = await db.select().from(feePaymentsTable).where(and(...conditions));
@@ -69,7 +69,7 @@ router.get("/students/:studentId/payments", async (req: Request, res: Response) 
 
 router.get("/payments/:paymentId", async (req: Request, res: Response) => {
   try {
-    const [payment] = await db.select().from(feePaymentsTable).where(eq(feePaymentsTable.id, req.params.paymentId));
+    const [payment] = await db.select().from(feePaymentsTable).where(eq(feePaymentsTable.id, (req.params.paymentId as string)));
     if (!payment) {
       res.status(404).json({ error: "Payment not found" });
       return;

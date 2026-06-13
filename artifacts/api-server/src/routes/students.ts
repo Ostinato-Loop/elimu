@@ -18,7 +18,7 @@ router.get("/schools/:schoolId/students", async (req: Request, res: Response) =>
     const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10)));
     const offset = (pageNum - 1) * limitNum;
 
-    const conditions: SQL[] = [eq(studentsTable.schoolId, req.params.schoolId)];
+    const conditions: SQL[] = [eq(studentsTable.schoolId, (req.params.schoolId as string))];
     if (classId) conditions.push(eq(studentsTable.classId, classId));
     if (status) conditions.push(eq(studentsTable.status, status));
 
@@ -56,8 +56,8 @@ router.post("/schools/:schoolId/students", async (req: Request, res: Response) =
       lastName,
       email: email || null,
       phone: phone || null,
-      studentNumber: generateStudentNumber(req.params.schoolId),
-      schoolId: req.params.schoolId,
+      studentNumber: generateStudentNumber((req.params.schoolId as string)),
+      schoolId: (req.params.schoolId as string),
       classId: classId || null,
       dateOfBirth: dateOfBirth || null,
       gender: gender || null,
@@ -69,8 +69,8 @@ router.post("/schools/:schoolId/students", async (req: Request, res: Response) =
 
     await db
       .update(schoolsTable)
-      .set({ enrollmentCount: (await db.select().from(studentsTable).where(eq(studentsTable.schoolId, req.params.schoolId))).length })
-      .where(eq(schoolsTable.id, req.params.schoolId));
+      .set({ enrollmentCount: (await db.select().from(studentsTable).where(eq(studentsTable.schoolId, (req.params.schoolId as string)))).length })
+      .where(eq(schoolsTable.id, (req.params.schoolId as string)));
 
     res.status(201).json(student);
   } catch (e: unknown) {
@@ -84,7 +84,7 @@ router.get("/students/:studentId", async (req: Request, res: Response) => {
     const [student] = await db
       .select()
       .from(studentsTable)
-      .where(eq(studentsTable.id, req.params.studentId));
+      .where(eq(studentsTable.id, (req.params.studentId as string)));
 
     if (!student) {
       res.status(404).json({ error: "Student not found" });
@@ -115,7 +115,7 @@ router.put("/students/:studentId", async (req: Request, res: Response) => {
         ...(profileImageUrl !== undefined && { profileImageUrl }),
         updatedAt: new Date(),
       })
-      .where(eq(studentsTable.id, req.params.studentId))
+      .where(eq(studentsTable.id, (req.params.studentId as string)))
       .returning();
 
     if (!student) {
@@ -134,7 +134,7 @@ router.get("/students/:studentId/transcript", async (req: Request, res: Response
     const [student] = await db
       .select()
       .from(studentsTable)
-      .where(eq(studentsTable.id, req.params.studentId));
+      .where(eq(studentsTable.id, (req.params.studentId as string)));
 
     if (!student) {
       res.status(404).json({ error: "Student not found" });
@@ -158,7 +158,7 @@ router.get("/students/:studentId/transcript", async (req: Request, res: Response
       .from(assessmentResultsTable)
       .innerJoin(assessmentsTable, eq(assessmentResultsTable.assessmentId, assessmentsTable.id))
       .innerJoin(subjectsTable, eq(assessmentsTable.subjectId, subjectsTable.id))
-      .where(eq(assessmentResultsTable.studentId, req.params.studentId));
+      .where(eq(assessmentResultsTable.studentId, (req.params.studentId as string)));
 
     const entries = results.map(r => ({
       subjectName: r.subjectName,

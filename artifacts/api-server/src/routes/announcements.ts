@@ -12,7 +12,7 @@ router.get("/schools/:schoolId/announcements", async (req: Request, res: Respons
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
     const offset = (pageNum - 1) * limitNum;
 
-    const conditions: SQL[] = [eq(announcementsTable.schoolId, req.params.schoolId)];
+    const conditions: SQL[] = [eq(announcementsTable.schoolId, (req.params.schoolId as string))];
     if (audience) conditions.push(eq(announcementsTable.audience, audience));
 
     const all = await db
@@ -44,7 +44,7 @@ router.post("/schools/:schoolId/announcements", async (req: Request, res: Respon
 
     const [announcement] = await db.insert(announcementsTable).values({
       id: randomUUID(),
-      schoolId: req.params.schoolId,
+      schoolId: (req.params.schoolId as string),
       authorId,
       authorName,
       title,
@@ -65,7 +65,7 @@ router.get("/announcements/:announcementId", async (req: Request, res: Response)
     const [announcement] = await db
       .select()
       .from(announcementsTable)
-      .where(eq(announcementsTable.id, req.params.announcementId));
+      .where(eq(announcementsTable.id, (req.params.announcementId as string)));
     if (!announcement) {
       res.status(404).json({ error: "Announcement not found" });
       return;
@@ -79,7 +79,7 @@ router.get("/announcements/:announcementId", async (req: Request, res: Response)
 
 router.delete("/announcements/:announcementId", async (req: Request, res: Response) => {
   try {
-    await db.delete(announcementsTable).where(eq(announcementsTable.id, req.params.announcementId));
+    await db.delete(announcementsTable).where(eq(announcementsTable.id, (req.params.announcementId as string)));
     res.json({ success: true });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unknown error";

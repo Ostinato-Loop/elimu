@@ -12,7 +12,7 @@ router.get("/schools/:schoolId/parents", async (req: Request, res: Response) => 
     const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10)));
     const offset = (pageNum - 1) * limitNum;
 
-    let all = await db.select().from(parentsTable).where(eq(parentsTable.schoolId, req.params.schoolId));
+    let all = await db.select().from(parentsTable).where(eq(parentsTable.schoolId, (req.params.schoolId as string)));
 
     if (search) {
       const s = search.toLowerCase();
@@ -50,7 +50,7 @@ router.post("/schools/:schoolId/parents", async (req: Request, res: Response) =>
       lastName,
       email: email || null,
       phone: phone || null,
-      schoolId: req.params.schoolId,
+      schoolId: (req.params.schoolId as string),
       occupation: occupation || null,
       address: address || null,
       childrenIds: JSON.stringify(studentIds),
@@ -68,7 +68,7 @@ router.post("/schools/:schoolId/parents", async (req: Request, res: Response) =>
 
 router.get("/parents/:parentId", async (req: Request, res: Response) => {
   try {
-    const [parent] = await db.select().from(parentsTable).where(eq(parentsTable.id, req.params.parentId));
+    const [parent] = await db.select().from(parentsTable).where(eq(parentsTable.id, (req.params.parentId as string)));
     if (!parent) {
       res.status(404).json({ error: "Parent not found" });
       return;
@@ -82,7 +82,7 @@ router.get("/parents/:parentId", async (req: Request, res: Response) => {
 
 router.get("/parents/:parentId/children", async (req: Request, res: Response) => {
   try {
-    const [parent] = await db.select().from(parentsTable).where(eq(parentsTable.id, req.params.parentId));
+    const [parent] = await db.select().from(parentsTable).where(eq(parentsTable.id, (req.params.parentId as string)));
     if (!parent) {
       res.status(404).json({ error: "Parent not found" });
       return;

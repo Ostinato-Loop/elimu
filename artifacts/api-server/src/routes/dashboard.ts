@@ -17,7 +17,7 @@ const router = Router();
 
 router.get("/schools/:schoolId/dashboard", async (req: Request, res: Response) => {
   try {
-    const schoolId = req.params.schoolId;
+    const schoolId = (req.params.schoolId as string);
 
     const [school] = await db.select().from(schoolsTable).where(eq(schoolsTable.id, schoolId));
     if (!school) {
