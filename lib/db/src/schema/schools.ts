@@ -16,6 +16,7 @@ export const schoolsTable = pgTable("schools", {
   accreditationStatus: text("accreditation_status"),
   verificationStatus: text("verification_status").notNull().default("unverified"),
   enrollmentCount: integer("enrollment_count").notNull().default(0),
+  createdById: text("created_by_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

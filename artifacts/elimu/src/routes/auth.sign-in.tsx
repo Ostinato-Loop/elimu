@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
 import { GraduationCap, Mail, Lock, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/auth/sign-in")({
@@ -7,6 +6,12 @@ export const Route = createFileRoute("/auth/sign-in")({
 });
 
 function SignIn() {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const returnTo = encodeURIComponent(window.location.pathname === "/auth/sign-in" ? "/dashboard" : window.location.pathname);
+    window.location.href = `/api/login?returnTo=${returnTo}`;
+  }
+
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden overflow-hidden lg:block" style={{ backgroundImage: "var(--gradient-hero)" }}>
@@ -37,7 +42,7 @@ function SignIn() {
           <h1 className="text-2xl font-bold">Welcome back</h1>
           <p className="mt-1 text-sm text-muted-foreground">Sign in to your school workspace</p>
 
-          <form className="mt-8 space-y-4">
+          <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
             <Field icon={Mail} type="email" placeholder="name@school.elimu.africa" label="Email" />
             <Field icon={Lock} type="password" placeholder="••••••••" label="Password" />
             <div className="flex items-center justify-between text-sm">
@@ -46,9 +51,13 @@ function SignIn() {
               </label>
               <a href="#" className="font-medium text-primary hover:underline">Forgot?</a>
             </div>
-            <Button asChild variant="hero" size="lg" className="w-full">
-              <Link to="/dashboard">Sign in <ArrowRight className="h-4 w-4" /></Link>
-            </Button>
+            <button
+              type="submit"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-6 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              style={{ backgroundImage: "var(--gradient-hero)" }}
+            >
+              Sign in <ArrowRight className="h-4 w-4" />
+            </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">

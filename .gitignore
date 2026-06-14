@@ -47,3 +47,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# TanStack Router — auto-generated, do not commit
+**/routeTree.gen.ts

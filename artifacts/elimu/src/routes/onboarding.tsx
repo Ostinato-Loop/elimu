@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api/client";
 import {
   GraduationCap,
   School,
@@ -11,6 +12,7 @@ import {
   Check,
   ArrowRight,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding")({
@@ -29,12 +31,44 @@ const types = [
 function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [type, setType] = useState<string | null>(null);
+  const [schoolName, setSchoolName] = useState("");
+  const [country, setCountry] = useState("");
+  const [stateRegion, setStateRegion] = useState("");
+  const [city, setCity] = useState("");
+  const [schoolSize, setSchoolSize] = useState("1 – 100");
+  const [academicCalendar, setAcademicCalendar] = useState("3 Terms (Jan – Dec)");
   const [domainMode, setDomainMode] = useState<"sub" | "own">("sub");
   const [sub, setSub] = useState("");
 
   const total = 4;
   const pct = (step / total) * 100;
+
+  async function handleLaunch() {
+    if (!schoolName || !type || !country) {
+      setError("School name, type, and country are required.");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.post("/schools", {
+        name: schoolName,
+        type,
+        country,
+        state: stateRegion || undefined,
+        city: city || undefined,
+      });
+      navigate({ to: "/dashboard" });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to create school";
+      setError(msg);
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,16 +124,16 @@ function Onboarding() {
               <h1 className="text-3xl font-bold">Tell us about your school</h1>
               <p className="mt-2 text-muted-foreground">This sets up your workspace.</p>
             </div>
-            <FieldInput label="School name" placeholder="Greenfield Academy" />
+            <FieldInput label="School name" placeholder="Greenfield Academy" value={schoolName} onChange={setSchoolName} />
             <div className="grid gap-4 sm:grid-cols-2">
-              <FieldInput label="Country" placeholder="Kenya" />
-              <FieldInput label="State / Region" placeholder="Nairobi" />
+              <FieldInput label="Country" placeholder="Kenya" value={country} onChange={setCountry} />
+              <FieldInput label="State / Region" placeholder="Nairobi" value={stateRegion} onChange={setStateRegion} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <FieldInput label="City" placeholder="Nairobi" />
-              <FieldSelect label="School size" options={["1 – 100", "100 – 500", "500 – 2,000", "2,000 – 10,000", "10,000+"]} />
+              <FieldInput label="City" placeholder="Nairobi" value={city} onChange={setCity} />
+              <FieldSelect label="School size" options={["1 – 100", "100 – 500", "500 – 2,000", "2,000 – 10,000", "10,000+"]} value={schoolSize} onChange={setSchoolSize} />
             </div>
-            <FieldSelect label="Academic calendar" options={["3 Terms (Jan – Dec)", "2 Semesters (Sep – Jun)", "Trimester", "Custom"]} />
+            <FieldSelect label="Academic calendar" options={["3 Terms (Jan – Dec)", "2 Semesters (Sep – Jun)", "Trimester", "Custom"]} value={academicCalendar} onChange={setAcademicCalendar} />
           </section>
         )}
 
@@ -136,7 +170,7 @@ function Onboarding() {
                   <input
                     value={sub}
                     onChange={(e) => setSub(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                    placeholder="greenfield"
+                    placeholder={schoolName ? schoolName.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-") : "greenfield"}
                     className="h-full flex-1 bg-transparent px-3 text-sm outline-none"
                   />
                   <span className="select-none border-l border-border bg-secondary px-3 py-3 text-sm font-mono text-muted-foreground">
@@ -151,7 +185,7 @@ function Onboarding() {
               </div>
             ) : (
               <div>
-                <FieldInput label="Your domain" placeholder="myschool.edu.ng" />
+                <FieldInput label="Your domain" placeholder="myschool.edu.ng" value="" onChange={() => {}} />
                 <div className="mt-3 rounded-xl border border-dashed border-border bg-secondary/40 p-4 text-sm text-muted-foreground">
                   We'll guide you through DNS records, SSL provisioning and ownership verification.
                 </div>
@@ -167,16 +201,21 @@ function Onboarding() {
               <p className="mt-2 text-muted-foreground">We'll create your starter accounts and you're ready.</p>
             </div>
             <div className="rounded-2xl border border-border bg-card p-5">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">School</div>
+              <div className="mt-2 text-lg font-bold">{schoolName || "Your School"}</div>
+              <div className="mt-1 text-sm text-muted-foreground capitalize">{type?.replace("-", " ")} · {country}</div>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-5">
               <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Starter accounts</div>
               <ul className="mt-4 space-y-3 text-sm">
                 {[
-                  "principal@" + (sub || "school") + ".elimu.africa",
-                  "admin@" + (sub || "school") + ".elimu.africa",
-                  "info@" + (sub || "school") + ".elimu.africa",
+                  "principal@" + (sub || schoolName.toLowerCase().replace(/\s+/g, "") || "school") + ".elimu.africa",
+                  "admin@" + (sub || schoolName.toLowerCase().replace(/\s+/g, "") || "school") + ".elimu.africa",
+                  "info@" + (sub || schoolName.toLowerCase().replace(/\s+/g, "") || "school") + ".elimu.africa",
                 ].map((e) => (
                   <li key={e} className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2 font-mono">
-                    <span>{e}</span>
-                    <span className="text-xs text-primary">Ready</span>
+                    <span className="truncate">{e}</span>
+                    <span className="ml-3 shrink-0 text-xs text-primary">Ready</span>
                   </li>
                 ))}
               </ul>
@@ -187,6 +226,11 @@ function Onboarding() {
                 Use CSV upload from the admin dashboard to provision the rest of your students and teachers in one go.
               </p>
             </div>
+            {error && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
           </section>
         )}
 
@@ -195,12 +239,17 @@ function Onboarding() {
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
           {step < total ? (
-            <Button variant="hero" size="lg" onClick={() => setStep((s) => s + 1)}>
+            <Button
+              variant="hero"
+              size="lg"
+              disabled={step === 1 && !type}
+              onClick={() => setStep((s) => s + 1)}
+            >
               Continue <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button variant="hero" size="lg" onClick={() => navigate({ to: "/dashboard" })}>
-              Launch school <ArrowRight className="h-4 w-4" />
+            <Button variant="hero" size="lg" disabled={submitting} onClick={handleLaunch}>
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Launch school <ArrowRight className="h-4 w-4" /></>}
             </Button>
           )}
         </div>
@@ -209,20 +258,49 @@ function Onboarding() {
   );
 }
 
-function FieldInput({ label, ...rest }: { label: string; placeholder: string }) {
+function FieldInput({
+  label,
+  value,
+  onChange,
+  ...rest
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div>
       <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</label>
-      <input {...rest} className="h-12 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-primary" />
+      <input
+        {...rest}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-12 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-primary"
+      />
     </div>
   );
 }
 
-function FieldSelect({ label, options }: { label: string; options: string[] }) {
+function FieldSelect({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div>
       <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</label>
-      <select className="h-12 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-primary">
+      <select
+        className="h-12 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-primary"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
         {options.map((o) => <option key={o}>{o}</option>)}
       </select>
     </div>

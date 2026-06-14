@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { db, schoolsTable } from "@workspace/db";
-import { eq, like, and, type SQL } from "drizzle-orm";
+import { eq, and, type SQL } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 const router = Router();
@@ -30,6 +30,24 @@ router.get("/schools", async (req: Request, res: Response) => {
   }
 });
 
+router.get("/my/schools", async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const schools = await db
+      .select()
+      .from(schoolsTable)
+      .where(eq(schoolsTable.createdById, req.user.id));
+
+    res.json({ schools });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    res.status(500).json({ error: msg });
+  }
+});
+
 router.post("/schools", async (req: Request, res: Response) => {
   try {
     const { name, type, country, state, city, address, phone, email, logoUrl } = req.body;
@@ -51,6 +69,7 @@ router.post("/schools", async (req: Request, res: Response) => {
       logoUrl: logoUrl || null,
       verificationStatus: "unverified",
       enrollmentCount: 0,
+      createdById: req.user?.id ?? null,
     }).returning();
 
     res.status(201).json(school);
