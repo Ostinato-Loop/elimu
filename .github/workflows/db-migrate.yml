@@ -1,0 +1,55 @@
+name: DB — Push Schema to Production
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Deploy — AWS ECS (elimu.rald.cloud)"]
+    types: [completed]
+
+env:
+  AWS_REGION: eu-west-1
+
+jobs:
+  migrate:
+    name: drizzle-kit push → production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Fetch DATABASE_URL from Secrets Manager
+        run: |
+          DB_URL=$(aws secretsmanager get-secret-value \
+            --secret-id elimu/DATABASE_URL \
+            --query SecretString \
+            --output text)
+          echo "::add-mask::$DB_URL"
+          echo "DATABASE_URL=$DB_URL" >> "$GITHUB_ENV"
+
+      - name: Push schema to production DB
+        run: pnpm --filter @workspace/db run push-force
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}

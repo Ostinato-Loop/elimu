@@ -8,6 +8,12 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+const ALLOWED_ORIGINS = [
+  "https://elimu.rald.cloud",
+  /\.elimu\.rald\.cloud$/,
+  /^http:\/\/localhost(:\d+)?$/,
+];
+
 app.use(
   pinoHttp({
     logger,
@@ -28,7 +34,7 @@ app.use(
   }),
 );
 
-app.use(cors({ credentials: true, origin: true }));
+app.use(cors({ credentials: true, origin: ALLOWED_ORIGINS }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

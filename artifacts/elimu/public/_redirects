@@ -1,1 +1,2 @@
+/api/* https://api.elimu.rald.cloud/api/:splat 200
 /* /index.html 200

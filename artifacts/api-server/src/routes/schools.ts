@@ -50,6 +50,10 @@ router.get("/my/schools", async (req: Request, res: Response) => {
 
 router.post("/schools", async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
     const { name, type, country, state, city, address, phone, email, logoUrl } = req.body;
     if (!name || !type || !country) {
       res.status(400).json({ error: "name, type, and country are required" });
@@ -69,7 +73,7 @@ router.post("/schools", async (req: Request, res: Response) => {
       logoUrl: logoUrl || null,
       verificationStatus: "unverified",
       enrollmentCount: 0,
-      createdById: req.user?.id ?? null,
+      createdById: req.user.id,
     }).returning();
 
     res.status(201).json(school);
@@ -99,6 +103,10 @@ router.get("/schools/:schoolId", async (req: Request, res: Response) => {
 
 router.put("/schools/:schoolId", async (req: Request, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
     const { name, type, country, state, city, address, phone, email, logoUrl, accreditationStatus } = req.body;
 
     const [school] = await db
