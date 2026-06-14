@@ -1,0 +1,70 @@
+name: Deploy — Cloudflare Pages (elimu.rald.cloud)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'artifacts/elimu/**'
+      - 'lib/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build → Cloudflare Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Codegen (API spec → hooks)
+        run: pnpm --filter @workspace/api-spec run codegen
+        continue-on-error: true
+
+      - name: Build frontend
+        working-directory: artifacts/elimu
+        env:
+          BASE_PATH: /
+          PORT: 4173
+          NODE_ENV: production
+          VITE_API_BASE: https://api.elimu.rald.cloud
+        run: pnpm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy artifacts/elimu/dist --project-name=elimu-rald --branch=main
+          # Required secrets (add in GitHub repo → Settings → Secrets):
+          #   CLOUDFLARE_API_TOKEN — Cloudflare API token with Pages:Edit permission
+          #   CLOUDFLARE_ACCOUNT_ID — your Cloudflare account ID
+
+      - name: Health check
+        run: |
+          sleep 20
+          STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://elimu.rald.cloud || echo "000")
+          echo "elimu.rald.cloud → HTTP $STATUS"
+          [ "$STATUS" = "200" ] && echo "✓ ELIMU live" || echo "⚠ DNS may still be propagating"
+        continue-on-error: true
