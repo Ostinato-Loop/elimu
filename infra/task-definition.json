@@ -4,12 +4,12 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskRole",
+  "executionRoleArn": "arn:aws:iam::093583252030:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::093583252030:role/ecsTaskRole",
   "containerDefinitions": [
     {
       "name": "elimu-api",
-      "image": "ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/elimu-api:latest",
+      "image": "093583252030.dkr.ecr.eu-west-1.amazonaws.com/elimu-api:latest",
       "essential": true,
       "portMappings": [
         {
@@ -24,15 +24,15 @@
       "secrets": [
         {
           "name": "DATABASE_URL",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:elimu/DATABASE_URL"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:093583252030:secret:elimu/DATABASE_URL"
         },
         {
           "name": "ISSUER_URL",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:elimu/ISSUER_URL"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:093583252030:secret:elimu/ISSUER_URL"
         },
         {
           "name": "REPL_ID",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:ACCOUNT_ID:secret:elimu/REPL_ID"
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:093583252030:secret:elimu/REPL_ID"
         }
       ],
       "logConfiguration": {
