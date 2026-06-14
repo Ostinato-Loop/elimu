@@ -1,0 +1,117 @@
+name: Fix — Use Supabase as production DATABASE_URL
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-1
+
+jobs:
+  fix-db:
+    name: Derive + test Supabase DATABASE_URL → Secrets Manager
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install pg
+        run: npm install --prefix /tmp/pgtest pg 2>/dev/null
+
+      - name: Build and test Supabase DATABASE_URL
+        id: db
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "::add-mask::$SUPABASE_SERVICE_ROLE_KEY"
+
+          # Extract project ref from SUPABASE_URL (https://[ref].supabase.co)
+          PROJECT_REF=$(echo "$SUPABASE_URL" | sed 's|https://||; s|\.supabase\.co.*||')
+          echo "Project ref: ${PROJECT_REF}"
+
+          # Try regions in order of preference (eu-west-1 first to match ECS)
+          REGIONS="eu-west-1 us-east-1 ap-southeast-1 us-west-2 ap-northeast-1"
+          SUCCESS=false
+
+          for REGION in $REGIONS; do
+            POOLER_HOST="aws-0-${REGION}.pooler.supabase.com"
+            # Session mode (5432) — supports persistent connections and DDL
+            TEST_URL="postgresql://postgres.${PROJECT_REF}:${SUPABASE_SERVICE_ROLE_KEY}@${POOLER_HOST}:5432/postgres?sslmode=require"
+            echo "::add-mask::${TEST_URL}"
+
+            echo "Testing region: ${REGION} (${POOLER_HOST}:5432)..."
+
+            node -e "
+              const { Client } = require('/tmp/pgtest/node_modules/pg');
+              const c = new Client({ connectionString: process.env.TEST_URL, connectionTimeoutMillis: 8000 });
+              c.connect()
+                .then(() => c.query('SELECT 1 AS ok'))
+                .then(r => { console.log('CONN_OK'); c.end(); process.exit(0); })
+                .catch(e => { console.error('CONN_FAIL:', e.message); process.exit(1); });
+            " TEST_URL="$TEST_URL" && {
+              echo "✓ Connected via ${REGION}"
+              echo "db_url=${TEST_URL}" >> $GITHUB_OUTPUT
+              echo "region=${REGION}" >> $GITHUB_OUTPUT
+              SUCCESS=true
+              break
+            } || true
+          done
+
+          if [ "$SUCCESS" != "true" ]; then
+            echo ""
+            echo "Session mode failed. Trying transaction pooler (6543)..."
+            for REGION in $REGIONS; do
+              POOLER_HOST="aws-0-${REGION}.pooler.supabase.com"
+              TEST_URL="postgresql://postgres.${PROJECT_REF}:${SUPABASE_SERVICE_ROLE_KEY}@${POOLER_HOST}:6543/postgres?sslmode=require&pgbouncer=true"
+              echo "::add-mask::${TEST_URL}"
+              echo "Testing transaction mode: ${REGION}..."
+              node -e "
+                const { Client } = require('/tmp/pgtest/node_modules/pg');
+                const c = new Client({ connectionString: process.env.TEST_URL, connectionTimeoutMillis: 8000 });
+                c.connect()
+                  .then(() => c.query('SELECT 1 AS ok'))
+                  .then(r => { console.log('CONN_OK'); c.end(); process.exit(0); })
+                  .catch(e => { console.error('CONN_FAIL:', e.message); process.exit(1); });
+              " TEST_URL="$TEST_URL" && {
+                echo "✓ Connected via ${REGION} (transaction pooler)"
+                echo "db_url=${TEST_URL}" >> $GITHUB_OUTPUT
+                echo "region=${REGION}" >> $GITHUB_OUTPUT
+                SUCCESS=true
+                break
+              } || true
+            done
+          fi
+
+          if [ "$SUCCESS" != "true" ]; then
+            echo "##[error]All Supabase pooler attempts failed."
+            echo "##[error]If JWT auth is not enabled, run bootstrap-secrets.yml manually"
+            echo "##[error]with a Supabase DB direct URL: postgresql://postgres:[DB_PASSWORD]@db.${PROJECT_REF}.supabase.co:5432/postgres?sslmode=require"
+            exit 1
+          fi
+
+      - name: Update elimu/DATABASE_URL in AWS Secrets Manager
+        run: |
+          echo "::add-mask::${{ steps.db.outputs.db_url }}"
+          aws secretsmanager update-secret \
+            --secret-id elimu/DATABASE_URL \
+            --secret-string "${{ steps.db.outputs.db_url }}"
+          echo "✓ DATABASE_URL → Supabase (${{ steps.db.outputs.region }})"
+
+      - name: Summary
+        run: |
+          echo "══════════════════════════════════════════"
+          echo "  Supabase DATABASE_URL set ✓"
+          echo "  Region: ${{ steps.db.outputs.region }}"
+          echo ""
+          echo "  Next steps (run in order):"
+          echo "  1. setup-alb-dns.yml  → ALB + DNS"
+          echo "  2. deploy-aws.yml     → ECS picks up new secret"
+          echo "  3. db-migrate.yml     → schema push to Supabase"
+          echo "══════════════════════════════════════════"

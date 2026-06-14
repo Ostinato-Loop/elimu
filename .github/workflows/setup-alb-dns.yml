@@ -174,25 +174,36 @@ jobs:
           SVC=$(aws ecs describe-services \
             --cluster "${{ env.ECS_CLUSTER }}" \
             --services "${{ env.ECS_SERVICE }}" \
-            --query 'services[0]' --output json 2>/dev/null || echo "null")
+            --query 'services[0]' --output json 2>/dev/null || echo "{}")
 
-          HAS_LB=$(echo "$SVC" | jq -r '.loadBalancers | length')
-          STATUS=$(echo "$SVC" | jq -r '.status')
+          HAS_LB=$(echo "$SVC" | jq -r '.loadBalancers | length // 0')
+          STATUS=$(echo "$SVC" | jq -r '.status // "NOTFOUND"')
 
           if [ "$STATUS" = "ACTIVE" ] && [ "$HAS_LB" = "0" ]; then
-            echo "Service exists without LB — scaling down and deleting..."
+            echo "Service exists without LB — scaling down and force-deleting..."
             aws ecs update-service \
               --cluster "${{ env.ECS_CLUSTER }}" \
               --service "${{ env.ECS_SERVICE }}" \
               --desired-count 0 || true
-            sleep 10
+            sleep 5
             aws ecs delete-service \
               --cluster "${{ env.ECS_CLUSTER }}" \
               --service "${{ env.ECS_SERVICE }}" \
               --force || true
-            echo "Waiting for service to drain..."
-            sleep 20
-            echo "✓ Old service deleted"
+
+            echo "Polling until service is INACTIVE (max 5 min)..."
+            for i in $(seq 1 30); do
+              CUR=$(aws ecs describe-services \
+                --cluster "${{ env.ECS_CLUSTER }}" \
+                --services "${{ env.ECS_SERVICE }}" \
+                --query 'services[0].status' --output text 2>/dev/null || echo "NOTFOUND")
+              echo "  [${i}/30] status=${CUR}"
+              if [ "$CUR" = "INACTIVE" ] || [ "$CUR" = "NOTFOUND" ] || [ "$CUR" = "None" ]; then
+                echo "✓ Service drained"
+                break
+              fi
+              sleep 10
+            done
           elif [ "$STATUS" = "ACTIVE" ] && [ "$HAS_LB" != "0" ]; then
             echo "✓ Service already has LB — no action needed"
           else
