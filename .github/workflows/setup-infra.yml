@@ -1,0 +1,253 @@
+name: Setup ELIMU AWS Infrastructure
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-1
+  ECR_REPOSITORY: elimu-api
+  ECS_CLUSTER: rald-elimu-cluster
+  ECS_SERVICE: elimu-api-service
+  CONTAINER_NAME: elimu-api
+  LOG_GROUP: /ecs/elimu-api
+
+jobs:
+  setup:
+    name: Provision AWS Infrastructure
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Get AWS account ID
+        id: aws
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "account_id=${ACCOUNT_ID}" >> $GITHUB_OUTPUT
+          echo "ecr_registry=${ACCOUNT_ID}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com" >> $GITHUB_OUTPUT
+          echo "✓ Account: ${ACCOUNT_ID}"
+
+      - name: Create ECR repository
+        run: |
+          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} \
+            --region ${{ env.AWS_REGION }} 2>/dev/null \
+          || aws ecr create-repository \
+            --repository-name ${{ env.ECR_REPOSITORY }} \
+            --image-scanning-configuration scanOnPush=true \
+            --region ${{ env.AWS_REGION }}
+          echo "✓ ECR repository ready: ${{ env.ECR_REPOSITORY }}"
+
+      - name: Create CloudWatch log group
+        run: |
+          aws logs create-log-group \
+            --log-group-name ${{ env.LOG_GROUP }} \
+            --region ${{ env.AWS_REGION }} 2>/dev/null || true
+          aws logs put-retention-policy \
+            --log-group-name ${{ env.LOG_GROUP }} \
+            --retention-in-days 30 \
+            --region ${{ env.AWS_REGION }} || true
+          echo "✓ Log group ready: ${{ env.LOG_GROUP }}"
+
+      - name: Create ECS IAM roles
+        run: |
+          cat > /tmp/ecs-trust.json << 'EOF'
+          {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs-tasks.amazonaws.com"},"Action":"sts:AssumeRole"}]}
+          EOF
+          aws iam get-role --role-name ecsTaskExecutionRole 2>/dev/null || {
+            aws iam create-role \
+              --role-name ecsTaskExecutionRole \
+              --assume-role-policy-document file:///tmp/ecs-trust.json
+            aws iam attach-role-policy \
+              --role-name ecsTaskExecutionRole \
+              --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+            aws iam attach-role-policy \
+              --role-name ecsTaskExecutionRole \
+              --policy-arn arn:aws:iam::aws:policy/SecretsManagerReadWrite
+            echo "✓ Created ecsTaskExecutionRole"
+          }
+          aws iam get-role --role-name ecsTaskRole 2>/dev/null || {
+            aws iam create-role \
+              --role-name ecsTaskRole \
+              --assume-role-policy-document file:///tmp/ecs-trust.json
+            echo "✓ Created ecsTaskRole"
+          }
+          echo "✓ IAM roles ready"
+
+      - name: Create Secrets Manager placeholders
+        run: |
+          for secret in elimu/DATABASE_URL elimu/ISSUER_URL elimu/REPL_ID; do
+            aws secretsmanager describe-secret --secret-id "${secret}" \
+              --region ${{ env.AWS_REGION }} 2>/dev/null || {
+              aws secretsmanager create-secret \
+                --name "${secret}" \
+                --description "ELIMU ${secret} — update with real value" \
+                --secret-string "PLACEHOLDER_UPDATE_REQUIRED" \
+                --region ${{ env.AWS_REGION }}
+              echo "✓ Created secret: ${secret}"
+            }
+          done
+          echo ""
+          echo "⚠️  Update these before going live:"
+          echo "   elimu/DATABASE_URL  → PostgreSQL connection string"
+          echo "   elimu/ISSUER_URL    → https://auth.rald.cloud/oidc"
+          echo "   elimu/REPL_ID       → Elimu OIDC client ID"
+
+      - name: Create ECS cluster
+        run: |
+          ACTIVE=$(aws ecs describe-clusters \
+            --clusters ${{ env.ECS_CLUSTER }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'clusters[?status==`ACTIVE`].clusterName' \
+            --output text 2>/dev/null || true)
+          if [ "$ACTIVE" != "${{ env.ECS_CLUSTER }}" ]; then
+            aws ecs create-cluster \
+              --cluster-name ${{ env.ECS_CLUSTER }} \
+              --capacity-providers FARGATE FARGATE_SPOT \
+              --default-capacity-provider-strategy capacityProvider=FARGATE,weight=1 \
+              --region ${{ env.AWS_REGION }}
+            echo "✓ Created cluster: ${{ env.ECS_CLUSTER }}"
+          else
+            echo "✓ Cluster already exists: ${{ env.ECS_CLUSTER }}"
+          fi
+
+      - name: Get default VPC and subnets
+        id: vpc
+        run: |
+          VPC_ID=$(aws ec2 describe-vpcs \
+            --filters Name=isDefault,Values=true \
+            --query 'Vpcs[0].VpcId' --output text \
+            --region ${{ env.AWS_REGION }})
+          SUBNET_IDS=$(aws ec2 describe-subnets \
+            --filters "Name=vpc-id,Values=${VPC_ID}" "Name=defaultForAz,Values=true" \
+            --query 'Subnets[*].SubnetId' --output text \
+            --region ${{ env.AWS_REGION }} | tr '\t' ',')
+          echo "vpc_id=${VPC_ID}" >> $GITHUB_OUTPUT
+          echo "subnet_ids=${SUBNET_IDS}" >> $GITHUB_OUTPUT
+          echo "✓ VPC: ${VPC_ID}"
+          echo "✓ Subnets: ${SUBNET_IDS}"
+
+      - name: Create security group
+        id: sg
+        run: |
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=elimu-api-sg" \
+              "Name=vpc-id,Values=${{ steps.vpc.outputs.vpc_id }}" \
+            --query 'SecurityGroups[0].GroupId' --output text \
+            --region ${{ env.AWS_REGION }} 2>/dev/null || echo "")
+          if [ -z "$SG_ID" ] || [ "$SG_ID" = "None" ]; then
+            SG_ID=$(aws ec2 create-security-group \
+              --group-name elimu-api-sg \
+              --description "ELIMU API security group" \
+              --vpc-id ${{ steps.vpc.outputs.vpc_id }} \
+              --query 'GroupId' --output text \
+              --region ${{ env.AWS_REGION }})
+            aws ec2 authorize-security-group-ingress \
+              --group-id ${SG_ID} --protocol tcp --port 5000 --cidr 0.0.0.0/0 \
+              --region ${{ env.AWS_REGION }} || true
+            aws ec2 authorize-security-group-ingress \
+              --group-id ${SG_ID} --protocol tcp --port 443 --cidr 0.0.0.0/0 \
+              --region ${{ env.AWS_REGION }} || true
+            echo "✓ Created security group: ${SG_ID}"
+          else
+            echo "✓ Security group exists: ${SG_ID}"
+          fi
+          echo "sg_id=${SG_ID}" >> $GITHUB_OUTPUT
+
+      - name: Register ECS task definition
+        id: task-def
+        run: |
+          ACCOUNT_ID="${{ steps.aws.outputs.account_id }}"
+          REGISTRY="${{ steps.aws.outputs.ecr_registry }}"
+          cat > /tmp/task-def.json << TASKDEF
+          {
+            "family": "elimu-api",
+            "networkMode": "awsvpc",
+            "requiresCompatibilities": ["FARGATE"],
+            "cpu": "512",
+            "memory": "1024",
+            "executionRoleArn": "arn:aws:iam::${ACCOUNT_ID}:role/ecsTaskExecutionRole",
+            "taskRoleArn": "arn:aws:iam::${ACCOUNT_ID}:role/ecsTaskRole",
+            "containerDefinitions": [{
+              "name": "${{ env.CONTAINER_NAME }}",
+              "image": "${REGISTRY}/${{ env.ECR_REPOSITORY }}:latest",
+              "essential": true,
+              "portMappings": [{"containerPort": 5000, "protocol": "tcp"}],
+              "environment": [
+                {"name": "NODE_ENV", "value": "production"},
+                {"name": "PORT", "value": "5000"}
+              ],
+              "secrets": [
+                {"name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${ACCOUNT_ID}:secret:elimu/DATABASE_URL"},
+                {"name": "ISSUER_URL",   "valueFrom": "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${ACCOUNT_ID}:secret:elimu/ISSUER_URL"},
+                {"name": "REPL_ID",      "valueFrom": "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${ACCOUNT_ID}:secret:elimu/REPL_ID"}
+              ],
+              "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                  "awslogs-group": "${{ env.LOG_GROUP }}",
+                  "awslogs-region": "${{ env.AWS_REGION }}",
+                  "awslogs-stream-prefix": "ecs"
+                }
+              },
+              "healthCheck": {
+                "command": ["CMD-SHELL", "curl -f http://localhost:5000/api/healthz || exit 1"],
+                "interval": 30, "timeout": 5, "retries": 3, "startPeriod": 120
+              }
+            }]
+          }
+          TASKDEF
+          TASK_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file:///tmp/task-def.json \
+            --query 'taskDefinition.taskDefinitionArn' --output text \
+            --region ${{ env.AWS_REGION }})
+          echo "task_def_arn=${TASK_ARN}" >> $GITHUB_OUTPUT
+          echo "✓ Task definition: ${TASK_ARN}"
+
+      - name: Create ECS service
+        run: |
+          ACTIVE=$(aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[?status==`ACTIVE`].serviceName' --output text \
+            --region ${{ env.AWS_REGION }} 2>/dev/null || true)
+          if [ "$ACTIVE" = "${{ env.ECS_SERVICE }}" ]; then
+            echo "✓ Service already exists: ${{ env.ECS_SERVICE }}"
+          else
+            aws ecs create-service \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --service-name ${{ env.ECS_SERVICE }} \
+              --task-definition "${{ steps.task-def.outputs.task_def_arn }}" \
+              --desired-count 1 \
+              --launch-type FARGATE \
+              --network-configuration "awsvpcConfiguration={subnets=[${{ steps.vpc.outputs.subnet_ids }}],securityGroups=[${{ steps.sg.outputs.sg_id }}],assignPublicIp=ENABLED}" \
+              --health-check-grace-period-seconds 120 \
+              --region ${{ env.AWS_REGION }}
+            echo "✓ Created ECS service: ${{ env.ECS_SERVICE }}"
+          fi
+
+      - name: Summary
+        run: |
+          echo ""
+          echo "══════════════════════════════════════════"
+          echo "  ELIMU Infrastructure Ready ✓"
+          echo "══════════════════════════════════════════"
+          echo "  Cluster : ${{ env.ECS_CLUSTER }}"
+          echo "  Service : ${{ env.ECS_SERVICE }}"
+          echo "  Region  : ${{ env.AWS_REGION }}"
+          echo ""
+          echo "  Action required — update Secrets Manager:"
+          echo "  - elimu/DATABASE_URL"
+          echo "  - elimu/ISSUER_URL    (https://auth.rald.cloud/oidc)"
+          echo "  - elimu/REPL_ID"
+          echo ""
+          echo "  Then push to main → deploy-aws.yml deploys the image."
+          echo "══════════════════════════════════════════"
