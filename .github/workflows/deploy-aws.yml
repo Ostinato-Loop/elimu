@@ -28,7 +28,6 @@ jobs:
     timeout-minutes: 20
 
     permissions:
-      id-token: write   # required for OIDC token request
       contents: read
 
     steps:
@@ -42,11 +41,22 @@ jobs:
         with:
           node-version: 22
 
-      - name: Configure AWS credentials (OIDC — no static keys)
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Create ECR repository if absent
+        run: |
+          aws ecr describe-repositories \
+            --repository-names "${{ env.ECR_REPOSITORY }}" \
+            --region "${{ env.AWS_REGION }}" \
+          || aws ecr create-repository \
+            --repository-name "${{ env.ECR_REPOSITORY }}" \
+            --image-scanning-configuration scanOnPush=true \
+            --region "${{ env.AWS_REGION }}"
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -69,14 +79,7 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Download ECS task definition
-        run: |
-          aws ecs describe-task-definition \
-            --task-definition elimu-api \
-            --query taskDefinition \
-            > infra/task-definition.json
-
-      - name: Update ECS task definition with new image
+      - name: Render ECS task definition with new image
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
@@ -97,9 +100,5 @@ jobs:
           sleep 15
           STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://elimu.rald.cloud/api/healthz || echo "000")
           echo "elimu.rald.cloud/api/healthz → HTTP $STATUS"
-          if [ "$STATUS" = "200" ]; then
-            echo "✓ ELIMU API healthy"
-          else
-            echo "⚠ ELIMU API not yet reachable (DNS propagation may take a moment)"
-          fi
+          [ "$STATUS" = "200" ] && echo "✓ ELIMU API healthy" || echo "⚠ DNS may still be propagating"
         continue-on-error: true
