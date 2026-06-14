@@ -50,8 +50,14 @@ jobs:
           VITE_API_BASE: https://api.elimu.rald.cloud
         run: pnpm run build
 
-      - name: Install Wrangler (global, avoids pnpm workspace conflict)
+      - name: Install Wrangler
         run: npm install -g wrangler@3
+
+      - name: Create Cloudflare Pages project (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: wrangler pages project create elimu-rald --production-branch=main || true
 
       - name: Deploy to Cloudflare Pages
         env:
