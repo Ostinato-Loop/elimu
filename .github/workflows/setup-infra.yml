@@ -12,6 +12,7 @@ env:
   LOG_GROUP: /ecs/elimu-api
 
 jobs:
+
   setup:
     name: Provision AWS Infrastructure
     runs-on: ubuntu-latest
@@ -82,6 +83,12 @@ jobs:
           }
           echo "✓ IAM roles ready"
 
+      - name: Create ECS service-linked role
+        run: |
+          aws iam get-role --role-name AWSServiceRoleForECS 2>/dev/null \
+          || aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
+          echo "✓ ECS service-linked role ready"
+
       - name: Create Secrets Manager placeholders
         run: |
           for secret in elimu/DATABASE_URL elimu/ISSUER_URL elimu/REPL_ID; do
@@ -108,16 +115,23 @@ jobs:
             --region ${{ env.AWS_REGION }} \
             --query 'clusters[?status==`ACTIVE`].clusterName' \
             --output text 2>/dev/null || true)
-          if [ "$ACTIVE" != "${{ env.ECS_CLUSTER }}" ]; then
+          if [ "$ACTIVE" = "${{ env.ECS_CLUSTER }}" ]; then
+            echo "✓ Cluster already exists: ${{ env.ECS_CLUSTER }}"
+          else
             aws ecs create-cluster \
               --cluster-name ${{ env.ECS_CLUSTER }} \
-              --capacity-providers FARGATE FARGATE_SPOT \
-              --default-capacity-provider-strategy capacityProvider=FARGATE,weight=1 \
               --region ${{ env.AWS_REGION }}
             echo "✓ Created cluster: ${{ env.ECS_CLUSTER }}"
-          else
-            echo "✓ Cluster already exists: ${{ env.ECS_CLUSTER }}"
           fi
+
+      - name: Enable FARGATE capacity provider
+        run: |
+          aws ecs put-cluster-capacity-providers \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --capacity-providers FARGATE FARGATE_SPOT \
+            --default-capacity-provider-strategy capacityProvider=FARGATE,weight=1 \
+            --region ${{ env.AWS_REGION }} 2>/dev/null || true
+          echo "✓ Capacity providers set"
 
       - name: Get default VPC and subnets
         id: vpc
