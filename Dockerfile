@@ -17,7 +17,11 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/artifacts/api-server/node_modules ./artifacts/api-server/node_modules
-COPY . .
+  COPY --from=deps /app/lib/db/node_modules                ./lib/db/node_modules
+  COPY --from=deps /app/lib/api-zod/node_modules           ./lib/api-zod/node_modules
+  COPY --from=deps /app/lib/api-client-react/node_modules  ./lib/api-client-react/node_modules
+  COPY --from=deps /app/lib/api-spec/node_modules          ./lib/api-spec/node_modules
+  COPY . .
 
 # Build the api-server
 RUN pnpm --filter @workspace/api-server run build
