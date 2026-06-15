@@ -23,6 +23,10 @@
       ],
       "secrets": [
         {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:093583252030:secret:elimu/DATABASE_URL"
+        },
+        {
           "name": "SUPABASE_URL",
           "valueFrom": "arn:aws:secretsmanager:eu-west-1:093583252030:secret:elimu/SUPABASE_URL"
         },

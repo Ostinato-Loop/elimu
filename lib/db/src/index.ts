@@ -1,27 +1,24 @@
 import pg from "pg";
-import { drizzle as drizzlePg, type NodePgDatabase } from "drizzle-orm/node-postgres";
-import { drizzle as drizzleSupabase } from "drizzle-orm/supabase";
-import { createClient } from "@supabase/supabase-js";
+import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 
 export * from "./schema";
-export type Schema = typeof schema;
-export type Db = NodePgDatabase<Schema>;
 
-const { DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+const { Pool } = pg;
+const databaseUrl = process.env.DATABASE_URL;
 
-if (!DATABASE_URL && !(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)) {
-  throw new Error(
-    "Either DATABASE_URL or both SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.",
+if (!databaseUrl) {
+  console.warn(
+    "[db] WARNING: DATABASE_URL is not set. " +
+    "Database operations will fail until a valid URL is configured via bootstrap-secrets.yml.",
   );
 }
 
-export const db: Db = (() => {
-  if (DATABASE_URL) {
-    const { Pool } = pg;
-    const pool = new Pool({ connectionString: DATABASE_URL });
-    return drizzlePg(pool, { schema });
-  }
-  const client = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
-  return drizzleSupabase(client) as unknown as Db;
-})();
+export const pool = new Pool({
+  connectionString: databaseUrl,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+});
+
+export const db = drizzle(pool, { schema });
