@@ -1,0 +1,55 @@
+name: Fix — Update Cloudflare Pages API proxy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    name: Patch _redirects → direct ALB
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            eu-west-1
+
+      - name: Get ALB DNS name
+        id: alb
+        run: |
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --region eu-west-1 \
+            --query 'LoadBalancers[?contains(LoadBalancerName, `elimu`)].DNSName | [0]' \
+            --output text 2>/dev/null || \
+          aws elbv2 describe-load-balancers \
+            --region eu-west-1 \
+            --query 'LoadBalancers[0].DNSName' \
+            --output text)
+          echo "ALB DNS: $ALB_DNS"
+          echo "alb_dns=$ALB_DNS" >> $GITHUB_OUTPUT
+
+      - name: Update _redirects
+        run: |
+          ALB="${{ steps.alb.outputs.alb_dns }}"
+          cat > artifacts/elimu/public/_redirects << EOF
+/api/*  http://${ALB}/api/:splat  200
+/*  /index.html  200
+EOF
+          echo "Updated _redirects:"
+          cat artifacts/elimu/public/_redirects
+
+      - name: Commit and push
+        run: |
+          git config user.email "ci@rald.cloud"
+          git config user.name "RALD CI"
+          git add artifacts/elimu/public/_redirects
+          git diff --staged --quiet || git commit -m "fix: proxy /api/* directly to ALB (bypass api.elimu.rald.cloud SSL issue)"
+          git push
