@@ -1,6 +1,6 @@
 import pg from "pg";
 import { drizzle as drizzlePg, type NodePgDatabase } from "drizzle-orm/node-postgres";
-import { drizzle as drizzleSupabase } from "drizzle-orm/supabase-js";
+import { drizzle as drizzleSupabase } from "drizzle-orm/supabase";
 import { createClient } from "@supabase/supabase-js";
 import * as schema from "./schema";
 
