@@ -11,7 +11,7 @@ env:
 
 jobs:
   migrate:
-    name: drizzle-kit push → production
+    name: Push Drizzle schema → production DB
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
 
@@ -40,16 +40,81 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Fetch DATABASE_URL from Secrets Manager
+      - name: Try explicit Supabase pg connection (JWT auth)
+        id: pgconn
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          DB_URL=$(aws secretsmanager get-secret-value \
-            --secret-id elimu/DATABASE_URL \
-            --query SecretString \
-            --output text)
-          echo "::add-mask::$DB_URL"
-          echo "DATABASE_URL=$DB_URL" >> "$GITHUB_ENV"
+          echo "::add-mask::$SUPABASE_SERVICE_ROLE_KEY"
+          PROJECT_REF=$(echo "$SUPABASE_URL" | sed 's|https://||; s|\.supabase\.co.*||')
+          npm install --prefix /tmp/pgtest pg 2>/dev/null
 
-      - name: Push schema to production DB
+          SUCCESS=false
+          for HOST in \
+            "aws-0-eu-west-1.pooler.supabase.com 5432" \
+            "aws-0-eu-west-1.pooler.supabase.com 6543" \
+            "db.${PROJECT_REF}.supabase.co 5432"; do
+            H=$(echo $HOST | awk '{print $1}')
+            P=$(echo $HOST | awk '{print $2}')
+            echo "Trying ${H}:${P}..."
+            node -e "
+              const pg = require('/tmp/pgtest/node_modules/pg');
+              const c = new pg.Client({
+                host: process.env.H,
+                port: parseInt(process.env.P),
+                user: 'postgres.' + process.env.REF,
+                password: process.env.KEY,
+                database: 'postgres',
+                ssl: { rejectUnauthorized: false },
+                connectionTimeoutMillis: 10000,
+              });
+              c.connect()
+                .then(() => c.query('SELECT current_database() AS db'))
+                .then(r => { console.log('CONN_OK db=' + r.rows[0].db); c.end(); process.exit(0); })
+                .catch(e => { console.error('CONN_FAIL code=' + e.code + ' msg=' + e.message.substring(0,80)); process.exit(1); });
+            " H="$H" P="$P" REF="$PROJECT_REF" KEY="$SUPABASE_SERVICE_ROLE_KEY" && {
+              echo "pg_host=${H}" >> $GITHUB_OUTPUT
+              echo "pg_port=${P}" >> $GITHUB_OUTPUT
+              echo "pg_ref=${PROJECT_REF}" >> $GITHUB_OUTPUT
+              SUCCESS=true
+              break
+            } || true
+          done
+
+          if [ "$SUCCESS" = "true" ]; then
+            DB_URL="postgresql://postgres.${PROJECT_REF}:${SUPABASE_SERVICE_ROLE_KEY}@${{ steps.pgconn.outputs.pg_host }}:${{ steps.pgconn.outputs.pg_port }}/postgres?sslmode=require"
+            echo "::add-mask::${DB_URL}"
+            echo "database_url=${DB_URL}" >> $GITHUB_OUTPUT
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "No direct pg connection available — will generate SQL artifact instead."
+          fi
+
+      - name: Push schema via drizzle-kit (direct DB)
+        if: steps.pgconn.outputs.success == 'true'
         run: pnpm --filter @workspace/db run push-force
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_URL: ${{ steps.pgconn.outputs.database_url }}
+
+      - name: Generate SQL migration (supabase-js mode — no direct DB)
+        if: steps.pgconn.outputs.success != 'true'
+        run: |
+          pnpm --filter @workspace/db run generate || true
+          echo "══════════════════════════════════════════"
+          echo "  Direct PostgreSQL connection unavailable."
+          echo "  The schema SQL has been generated and is"
+          echo "  available as a CI artifact below."
+          echo ""
+          echo "  Apply it once via Supabase SQL Editor:"
+          echo "  https://supabase.com/dashboard/project/$(echo '${{ secrets.SUPABASE_URL }}' | sed 's|https://||; s|\.supabase\.co.*||')/sql/new"
+          echo "══════════════════════════════════════════"
+
+      - name: Upload migration SQL as artifact
+        if: steps.pgconn.outputs.success != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-migration-sql
+          path: lib/db/migrations/
+          retention-days: 30

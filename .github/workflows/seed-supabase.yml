@@ -1,0 +1,61 @@
+name: Seed — Supabase credentials → AWS Secrets Manager
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-1
+
+jobs:
+  seed:
+    name: Create elimu/SUPABASE_URL and elimu/SUPABASE_SERVICE_ROLE_KEY
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upsert elimu/SUPABASE_URL
+        run: |
+          aws secretsmanager describe-secret \
+            --secret-id elimu/SUPABASE_URL 2>/dev/null \
+          && aws secretsmanager put-secret-value \
+            --secret-id elimu/SUPABASE_URL \
+            --secret-string "${{ secrets.SUPABASE_URL }}" \
+          || aws secretsmanager create-secret \
+            --name elimu/SUPABASE_URL \
+            --secret-string "${{ secrets.SUPABASE_URL }}"
+          echo "✓ elimu/SUPABASE_URL"
+
+      - name: Upsert elimu/SUPABASE_SERVICE_ROLE_KEY
+        run: |
+          echo "::add-mask::${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          aws secretsmanager describe-secret \
+            --secret-id elimu/SUPABASE_SERVICE_ROLE_KEY 2>/dev/null \
+          && aws secretsmanager put-secret-value \
+            --secret-id elimu/SUPABASE_SERVICE_ROLE_KEY \
+            --secret-string "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+          || aws secretsmanager create-secret \
+            --name elimu/SUPABASE_SERVICE_ROLE_KEY \
+            --secret-string "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          echo "✓ elimu/SUPABASE_SERVICE_ROLE_KEY"
+
+      - name: Summary
+        run: |
+          echo "══════════════════════════════════════════"
+          echo "  Supabase credentials seeded to AWS ✓"
+          echo ""
+          echo "  elimu/SUPABASE_URL               ✓"
+          echo "  elimu/SUPABASE_SERVICE_ROLE_KEY  ✓"
+          echo ""
+          echo "  Next: run deploy-aws.yml to deploy the"
+          echo "  new task definition that uses these secrets."
+          echo "  Then run db-migrate.yml to push schema."
+          echo "══════════════════════════════════════════"

@@ -1,16 +1,27 @@
-import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
+import { drizzle as drizzlePg, type NodePgDatabase } from "drizzle-orm/node-postgres";
+import { drizzle as drizzleSupabase } from "drizzle-orm/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import * as schema from "./schema";
 
-const { Pool } = pg;
+export * from "./schema";
+export type Schema = typeof schema;
+export type Db = NodePgDatabase<Schema>;
 
-if (!process.env.DATABASE_URL) {
+const { DATABASE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+
+if (!DATABASE_URL && !(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "Either DATABASE_URL or both SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.",
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle(pool, { schema });
-
-export * from "./schema";
+export const db: Db = (() => {
+  if (DATABASE_URL) {
+    const { Pool } = pg;
+    const pool = new Pool({ connectionString: DATABASE_URL });
+    return drizzlePg(pool, { schema });
+  }
+  const client = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+  return drizzleSupabase(client) as unknown as Db;
+})();
