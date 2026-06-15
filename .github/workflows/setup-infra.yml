@@ -91,7 +91,7 @@ jobs:
 
       - name: Create Secrets Manager placeholders
         run: |
-          for secret in elimu/DATABASE_URL elimu/ISSUER_URL elimu/REPL_ID; do
+          for secret in elimu/DATABASE_URL elimu/ISSUER_URL elimu/OIDC_CLIENT_ID; do
             aws secretsmanager describe-secret --secret-id "${secret}" \
               --region ${{ env.AWS_REGION }} 2>/dev/null || {
               aws secretsmanager create-secret \
@@ -106,7 +106,7 @@ jobs:
           echo "⚠️  Update these before going live:"
           echo "   elimu/DATABASE_URL  → PostgreSQL connection string"
           echo "   elimu/ISSUER_URL    → https://auth.rald.cloud/oidc"
-          echo "   elimu/REPL_ID       → Elimu OIDC client ID"
+          echo "   elimu/OIDC_CLIENT_ID → OIDC client ID (from auth.rald.cloud)"
 
       - name: Create ECS cluster
         run: |
@@ -202,7 +202,7 @@ jobs:
               "secrets": [
                 {"name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${ACCOUNT_ID}:secret:elimu/DATABASE_URL"},
                 {"name": "ISSUER_URL",   "valueFrom": "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${ACCOUNT_ID}:secret:elimu/ISSUER_URL"},
-                {"name": "REPL_ID",      "valueFrom": "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${ACCOUNT_ID}:secret:elimu/REPL_ID"}
+                {"name": "OIDC_CLIENT_ID","valueFrom": "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${ACCOUNT_ID}:secret:elimu/OIDC_CLIENT_ID"}
               ],
               "logConfiguration": {
                 "logDriver": "awslogs",
@@ -261,7 +261,7 @@ jobs:
           echo "  Action required — update Secrets Manager:"
           echo "  - elimu/DATABASE_URL"
           echo "  - elimu/ISSUER_URL    (https://auth.rald.cloud/oidc)"
-          echo "  - elimu/REPL_ID"
+          echo "  - elimu/OIDC_CLIENT_ID"
           echo ""
           echo "  Then push to main → deploy-aws.yml deploys the image."
           echo "══════════════════════════════════════════"

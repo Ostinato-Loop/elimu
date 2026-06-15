@@ -31,8 +31,8 @@
           "valueFrom": "arn:aws:secretsmanager:eu-west-1:093583252030:secret:elimu/ISSUER_URL"
         },
         {
-          "name": "REPL_ID",
-          "valueFrom": "arn:aws:secretsmanager:eu-west-1:093583252030:secret:elimu/REPL_ID"
+          "name": "OIDC_CLIENT_ID",
+          "valueFrom": "arn:aws:secretsmanager:eu-west-1:093583252030:secret:elimu/OIDC_CLIENT_ID"
         }
       ],
       "logConfiguration": {
